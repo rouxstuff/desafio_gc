@@ -1,5 +1,9 @@
+<p align='center'>
+    <img src='./assets/logo-gerdau.png' width='500'/>
+</p>
+
 # DESAFIO GC 2026 - GRUPO 16
-## 🏢 GERDAU 
+
 * Eduardo de Melo Scheibler 
 * Fernanda Cunha do Amaral
 * Gabriela Martins Oliveira
