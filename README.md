@@ -1,5 +1,5 @@
 <p align='center'>
-    <img src='./assets/logo-gerdau.png' width='500'/>
+    <img src='./assets/logo-gerdau.png'/>
 </p>
 
 # DESAFIO GC 2026 - GRUPO 16
