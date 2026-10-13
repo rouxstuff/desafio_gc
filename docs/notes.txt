@@ -1,0 +1,18 @@
+09/10 ATÉ 12/10
+01 - Diagnóstico de qualidade
+    - Colunas relevantes, tipos, faltantes, duplicados, inconsistências e limitações da base
+    - Há evidências da análise e decisões iniciais sobre tratamento?
+
+02 - EDA inicial
+     - Quantidade de códigos, frequência, padrões de descrição, possíveis duplicidades e grupos de registros
+     - A análise ajuda a compreender onde estão os principais problemas da base?
+
+03 - Padronizacao inicial 
+    - Exemplos de normalização de textos, nomenclaturas e critérios que poderão ser usados no saneamento.
+        - Quando foi acima de 70% de similaridade -> considera como mesmo código.
+    - Documentar 
+
+04 - Hipótese de similaridade
+    - Critérios que poderão indicar que dois códigos representam serviços semelhantes.
+    - O grupo consegue mostrar pelo menos alguns exemplos e explicar o raciocínio.
+        - 
