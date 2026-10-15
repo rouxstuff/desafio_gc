@@ -2,9 +2,9 @@ spring:
   application:
     name: desafiogc
   datasource:
-    url: jdbc:postgresql://aws-0-us-east-2.pooler.supabase.com:5432/postgres?user=postgres.hvwvtzpharcjzbygwofv&password=desafiogc16
-    username: postgres.hvwvtzpharcjzbygwofv
-    password: desafiogc16
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     hikari:
       maximum-pool-size: 5
   jpa:
