@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Consulta de serviços</title>
+</head>
+<body>
+<h1>Consulta de serviços</h1>
+
+<form th:action="@{/servicos}" method="get">
+    <label for="descricao">Nome do serviço</label>
+    <input type="text" id="descricao" name="descricao" th:value="${descricao}" autofocus>
+    <button type="submit">Buscar</button>
+</form>
+
+<div th:if="${buscou}">
+    <table th:unless="${servicos.isEmpty()}">
+        <thead>
+        <tr>
+            <th>Serviço</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="servico : ${servicos}">
+            <td th:text="${servico.descricao}">ELETRICISTA</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p th:if="${servicos.isEmpty()}">
+        Nenhum serviço encontrado para "<span th:text="${descricao}">texto</span>".
+    </p>
+</div>
+</body>
+</html>
