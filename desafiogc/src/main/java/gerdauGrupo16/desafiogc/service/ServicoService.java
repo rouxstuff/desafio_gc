@@ -1,6 +1,8 @@
 package gerdauGrupo16.desafiogc.service;
 
-import gerdauGrupo16.desafiogc.model.Servico;
+import gerdauGrupo16.desafiogc.model.entity.Categoria;
+import gerdauGrupo16.desafiogc.model.entity.Servico;
+import gerdauGrupo16.desafiogc.repository.CategoriaRepository;
 import gerdauGrupo16.desafiogc.repository.ServicoRepository;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +12,7 @@ import java.util.List;
 @Service
 public class ServicoService {
 
-    private ServicoRepository repository;
+    private final ServicoRepository repository;
 
     public ServicoService(ServicoRepository repository) {
         this.repository = repository;
@@ -20,8 +22,11 @@ public class ServicoService {
         return repository.findAll();
     }
 
-    public List<Servico> buscarPorDescricao(String descricao) {
-        return repository.findByDescricaoContaining(padronizar(descricao));
+    public List<Servico> buscarPorNome(String nome) {
+        return repository.findByNomeServicoContaining(padronizar(nome));
+    }
+    public List<Servico> buscarPorCategoriaNomeEServicoNome(String categoriaNome, String nomeServico) {
+        return repository.findByCategoria_CategoriaNomeAndNomeServicoContaining(padronizar(categoriaNome), padronizar(nomeServico));
     }
 
     private String padronizar(String texto) {
@@ -30,6 +35,4 @@ public class ServicoService {
                 .replaceAll("\\p{M}", "");
         return semAcento.trim().replaceAll("\\s+", " ").toUpperCase();
     }
-
-
 }
