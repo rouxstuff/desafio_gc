@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+
+<!-- FRAGMENTO 1: o <head> que toda pagina reutiliza. -->
+<head th:fragment="cabecalho(titulo)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titulo} + ' | Gerdau'">Gerdau</title>
+    <link rel="stylesheet" th:href="@{/css/gerdau.css}">
+</head>
+
+<body>
+<!-- FRAGMENTO 2: barra do topo -->
+<header class="topo" th:fragment="topo">
+    <div class="container">
+        <a class="marca" th:href="@{/servicos}">Gerdau <span>Catálogo de Serviços</span></a>
+        <nav class="menu">
+            <a class="ativo" th:href="@{/servicos}">Consulta</a>
+        </nav>
+    </div>
+</header>
+
+<!-- FRAGMENTO 3: rodapé -->
+<footer class="rodape" th:fragment="rodape">
+    <div class="container">
+        Gerdau
+    </div>
+</footer>
+
+<!-- FRAGMENTO 4: faixa azul com a caixa de busca. -->
+<section class="hero" th:fragment="hero(valor)">
+    <div class="container">
+        <h1>Consulta de serviços</h1>
+        <p>Digite só o nome do serviço. Horas extras, insalubridade e outros adicionais você marca depois.</p>
+        <div class="busca-wrap">
+            <form class="busca" th:action="@{/servicos}" method="get">
+                <input type="text" name="nomeServico" maxlength="40" placeholder="Ex.: eletricista"
+                       autocomplete="off" aria-label="Nome do serviço" th:value="${valor}">
+                <button type="submit">Buscar</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- FRAGMENTO 5: passos "1 Serviço, 2 Adicionais, 3 Confirmar". -->
+<ol class="passos" id="passos" th:fragment="passos(atual)">
+    <li data-p="1" th:class="${atual == 1 ? 'atual' : (atual > 1 ? 'feito' : '')}"><b>1</b> Serviço</li>
+    <li data-p="2" th:class="${atual == 2 ? 'atual' : (atual > 2 ? 'feito' : '')}"><b>2</b> Adicionais</li>
+    <li data-p="3" th:class="${atual == 3 ? 'atual' : ''}"><b>3</b> Confirmar</li>
+</ol>
+</body>
+</html>
