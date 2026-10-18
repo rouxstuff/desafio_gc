@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ServicoService {
@@ -29,7 +30,19 @@ public class ServicoService {
         return repository.findByCategoria_CategoriaNomeAndNomeServicoContaining(padronizar(categoriaNome), padronizar(nomeServico));
     }
 
-    private String padronizar(String texto) {
+    public Optional<Servico> buscarPorNomeExato(String nome) {
+        return repository.findByNomeServico(padronizar(nome));
+    }
+
+    public String tratarTextoExtra(String digitado, Servico servico) {
+        String d = padronizar(digitado);
+        String nome = padronizar(servico.getNomeServico());
+        if (d.equals(nome) || !d.contains(nome)) return "";
+        return d.replace(nome, "").trim();
+    }
+
+    public String padronizar(String texto) {
+        if (texto == null) return "";
         String semAcento = Normalizer
                 .normalize(texto, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "");
