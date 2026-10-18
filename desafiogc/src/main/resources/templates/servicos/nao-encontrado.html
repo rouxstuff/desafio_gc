@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Serviço não encontrado')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo}"></header>
+<section th:replace="~{fragments/layout :: hero(${nomeServico})}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <ol th:replace="~{fragments/layout :: passos(1)}"></ol>
+
+            <div class="grade">
+                <div>
+                    <span class="rotulo">Serviço</span>
+                    <div class="servico-escolhido">
+                        <span th:text="${nomeNovo}">SOLDADOR</span>
+                        <a th:href="@{/servicos}" style="color:var(--azul);font-size:.85rem;font-weight:600;text-decoration:none">Trocar</a>
+                    </div>
+                </div>
+
+                <aside class="resultado" aria-live="polite">
+                    <span class="selo novo">Serviço não encontrado</span>
+                    <p class="codigo-grande">Nenhum serviço com esse nome</p>
+                    <p class="nome" th:text="${nomeNovo}">SOLDADOR</p>
+
+                    <div th:if="${!similares.isEmpty()}">
+                        <p class="nota">Será que é um destes? Confira antes de cadastrar:</p>
+                        <div class="similares">
+                            <a th:each="s : ${similares}"
+                               th:href="@{/servicos/detalhes(nome=${s.nomeServico})}"
+                               th:text="${s.nomeServico}">ELETRICISTA</a>
+                        </div>
+                    </div>
+                    <p class="nota" th:if="${similares.isEmpty()}">Nenhum serviço parecido encontrado.</p>
+
+                    <a class="acao acao-link" th:href="@{/servicos/novo(nome=${nomeNovo})}">Cadastrar novo serviço</a>
+                </aside>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>

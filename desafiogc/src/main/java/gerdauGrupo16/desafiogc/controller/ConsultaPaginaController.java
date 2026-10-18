@@ -23,12 +23,33 @@ public class ConsultaPaginaController {
         this.adicionaisService = adicionaisService;
     }
 
-    @GetMapping("/servicos")
-    public String consultar(@RequestParam(required = false) String nomeServico, Model model) {
-        boolean buscou = nomeServico != null && !nomeServico.isBlank();
+    @GetMapping("/")
+    public String raiz() {
+        return "redirect:/servicos";
+    }
 
+    @GetMapping("/servicos")
+    public String consultar(@RequestParam(required = false) String nomeServico, Model model,
+                            RedirectAttributes redirect) {
+        boolean buscou = nomeServico != null && !nomeServico.isBlank();
         model.addAttribute("nomeServico", nomeServico);
-        model.addAttribute("candidatos", buscou ? service.buscarPorNome(nomeServico) : List.of());
+
+        if (!buscou) {
+            model.addAttribute("candidatos", List.of());
+            return "servicos/busca";
+        }
+
+        List<Servico> candidatos = service.buscarCandidatos(nomeServico);
+
+        if (candidatos.isEmpty()) {
+            return paginaNaoEncontrado(service.padronizar(nomeServico), model);
+        }
+        if (candidatos.size() == 1) {
+            redirect.addAttribute("nome", candidatos.get(0).getNomeServico());
+            redirect.addAttribute("digitado", nomeServico);
+            return "redirect:/servicos/detalhes";
+        }
+        model.addAttribute("candidatos", candidatos);
 
         return "servicos/busca";
     }
@@ -49,5 +70,12 @@ public class ConsultaPaginaController {
         model.addAttribute("textoExtra", service.tratarTextoExtra(digitado, servico));
         model.addAttribute("grupos", adicionaisService.listarAdicionaisAgrupados());
         return "servicos/detalhes";
+    }
+
+    private String paginaNaoEncontrado(String nome, Model model) {
+        model.addAttribute("nomeServico", nome);
+        model.addAttribute("nomeNovo", nome);
+        model.addAttribute("similares", service.similares(nome));
+        return "servicos/nao-encontrado";
     }
 }
