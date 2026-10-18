@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Adicionais')}">
+    <meta charset="UTF-8">
+</head>
+
+<body>
+<header th:replace="~{fragments/layout :: topo}"></header>
+<section th:replace="~{fragments/layout :: hero(${nomeServico})}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <ol th:replace="~{fragments/layout :: passos(2)}"></ol>
+
+            <form th:action="@{/servicos/confirmar}" method="post">
+                <input type="hidden" name="nome" th:value="${servico.nomeServico}">
+
+                <div class="grade">
+                    <div>
+                        <p class="alerta" th:if="${!textoExtra.isBlank()}">
+                            Você digitou <b>"<span th:text="${textoExtra}"></span>"</b> junto com o serviço.
+                            Isso não faz parte do nome: marque nos adicionais abaixo. O serviço continua o mesmo.
+                        </p>
+
+                        <span class="rotulo">Serviço</span>
+                        <div class="servico-escolhido">
+                            <span th:text="${servico.nomeServico}">ELETRICISTA</span>
+                            <a th:href="@{/servicos}" style="color:var(--azul);font-size:.85rem;font-weight:600;text-decoration:none">Trocar</a>
+                        </div>
+
+                        <span class="rotulo">Adicionais deste contrato (opcional)</span>
+                        <div class="dd">
+                            <button type="button" class="dd-botao" id="ddBotao" aria-expanded="false" aria-haspopup="true">
+                                <span id="ddTexto">Selecione os adicionais</span>
+                            </button>
+                            <div class="dd-painel" id="ddPainel">
+                                <th:block th:each="grupo : ${grupos}">
+                                    <div class="dd-grupo" th:text="${grupo.key}">Jornada</div>
+                                    <label class="dd-item" th:each="a : ${grupo.value}">
+                                        <input type="checkbox" name="adicionais" th:value="${a.id}">
+                                        <span>
+                                            <strong th:text="${a.maoDeObra}">Hora extra</strong>
+                                            <small th:text="${a.descricao}">Descrição</small>
+                                        </span>
+                                    </label>
+                                </th:block>
+                            </div>
+                        </div>
+                        <div class="chips" id="chips"><span class="vazio">Nenhum adicional marcado.</span></div>
+                    </div>
+
+                    <aside class="resultado" aria-live="polite">
+                        <span class="selo existe">✔ Serviço já cadastrado</span>
+                        <p class="codigo-grande" th:text="${servico.nomeServico}">ELETRICISTA</p>
+                        <ul class="resumo-ad oculto" id="resumo"></ul>
+                        <p class="nota" id="nota">Serviço encontrado no catálogo. Marque os adicionais, se algum se aplica.</p>
+                        <button type="submit" class="acao sec">Confirmar serviço</button>
+                    </aside>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>
