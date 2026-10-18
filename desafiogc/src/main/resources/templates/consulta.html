@@ -8,8 +8,8 @@
 <h1>Consulta de serviços</h1>
 
 <form th:action="@{/servicos}" method="get">
-    <label for="descricao">Nome do serviço</label>
-    <input type="text" id="descricao" name="descricao" th:value="${descricao}" autofocus>
+    <label for="nomeServico">Nome do serviço</label>
+    <input type="text" id="nomeServico" name="nomeServico" th:value="${nomeServico}" autofocus>
     <button type="submit">Buscar</button>
 </form>
 
@@ -22,13 +22,13 @@
         </thead>
         <tbody>
         <tr th:each="servico : ${servicos}">
-            <td th:text="${servico.descricao}">ELETRICISTA</td>
+            <td th:text="${servico.nomeServico}">ELETRICISTA</td>
         </tr>
         </tbody>
     </table>
 
     <p th:if="${servicos.isEmpty()}">
-        Nenhum serviço encontrado para "<span th:text="${descricao}">texto</span>".
+        Nenhum serviço encontrado para "<span th:text="${nomeServico}">texto</span>".
     </p>
 </div>
 </body>

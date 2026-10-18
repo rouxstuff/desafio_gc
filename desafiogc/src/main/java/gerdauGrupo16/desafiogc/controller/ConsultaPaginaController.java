@@ -18,12 +18,12 @@ public class ConsultaPaginaController {
     }
 
     @GetMapping("/servicos")
-    public String consultar(@RequestParam(required = false) String descricao, Model model) {
-        boolean buscou = descricao != null && !descricao.isBlank();
+    public String consultar(@RequestParam(required = false) String nomeServico, Model model) {
+        boolean buscou = nomeServico != null && !nomeServico.isBlank();
 
         model.addAttribute("buscou", buscou);
-        model.addAttribute("descricao", descricao);
-        model.addAttribute("servicos", buscou ? service.buscarPorDescricao(descricao) : List.of());
+        model.addAttribute("nomeServico", nomeServico);
+        model.addAttribute("servicos", buscou ? service.buscarPorNome(nomeServico) : List.of());
 
         return "consulta";
     }
