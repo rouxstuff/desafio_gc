@@ -21,10 +21,9 @@ public class ConsultaPaginaController {
     public String consultar(@RequestParam(required = false) String nomeServico, Model model) {
         boolean buscou = nomeServico != null && !nomeServico.isBlank();
 
-        model.addAttribute("buscou", buscou);
         model.addAttribute("nomeServico", nomeServico);
-        model.addAttribute("servicos", buscou ? service.buscarPorNome(nomeServico) : List.of());
+        model.addAttribute("candidatos", buscou ? service.buscarPorNome(nomeServico) : List.of());
 
-        return "consulta";
+        return "servicos/busca";
     }
 }
