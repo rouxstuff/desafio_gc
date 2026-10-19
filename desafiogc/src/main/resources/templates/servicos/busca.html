@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Serviço')}">
+        <meta charset="UTF-8">
+</head>
+
+<body>
+<header th:replace="~{fragments/layout :: topo('consulta')}"></header>
+<section th:replace="~{fragments/layout :: hero(${nomeServico})}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <ol th:replace="~{fragments/layout :: passos(1)}"></ol>
+
+            <p class="dica" th:if="${candidatos.isEmpty()}">
+                Digite o nome do serviço acima e escolha uma das opções da lista.
+            </p>
+
+            <div th:unless="${candidatos.isEmpty()}">
+                <h2>Encontramos mais de um serviço. Escolha o seu:</h2>
+                <table>
+                    <thead><tr><th>Código</th><th>Serviço</th><th>Categoria</th><th>Status</th></tr></thead>
+                    <tbody>
+                    <tr th:each="s : ${candidatos}">
+                        <td class="codigo" th:text="${s.codigoServico}">4096348</td>
+                        <td>
+                            <a class="tabela-link"
+                               th:href="@{/servicos/detalhes(codigo=${s.codigoServico}, digitado=${nomeServico})}"
+                               th:text="${s.nomeServico}">ELETRICISTA</a>
+                        </td>
+                        <td th:text="${s.categoria != null ? s.categoria.categoriaNome : '—'}">CIVIL</td>
+                        <td><span class="selo" th:classappend="${s.status.name().toLowerCase()}" th:text="${s.status}">APROVADO</span></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>
