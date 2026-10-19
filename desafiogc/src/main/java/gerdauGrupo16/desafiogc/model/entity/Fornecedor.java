@@ -19,12 +19,15 @@ public class Fornecedor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "codigo_fornecedor", unique = true, nullable = true)
     private String codigoFornecedor;
+
+    @Column(name = "nome_fornecedor", nullable = true)
+    private String nomeFornecedor;
 
     @JsonIgnore
     @OneToMany(mappedBy = "fornecedor")
-    private List<Servico> servicos;
+    private List<FornecedorServico> vinculos;
 
     public Fornecedor(String codigoFornecedor) {
         this.codigoFornecedor = codigoFornecedor;

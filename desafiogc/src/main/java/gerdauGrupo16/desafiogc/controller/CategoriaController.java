@@ -1,26 +1,35 @@
 package gerdauGrupo16.desafiogc.controller;
 
-import gerdauGrupo16.desafiogc.model.entity.Categoria;
+import gerdauGrupo16.desafiogc.controller.dto.CategoriaDTO;
 import gerdauGrupo16.desafiogc.service.CategoriaService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/categoria")
+@RequestMapping("/categorias")
+@AllArgsConstructor
 public class CategoriaController {
 
     private final CategoriaService categoriaService;
 
-    public CategoriaController(CategoriaService categoriaService) {
-        this.categoriaService = categoriaService;
+    @GetMapping
+    public ResponseEntity<List<CategoriaDTO>> listarCategorias() {
+        List<CategoriaDTO> listaCategorias = categoriaService.listarTodasCategorias().stream().
+                map(categoria -> new CategoriaDTO(categoria.getId(), categoria.getCategoriaNome())).
+                toList();
+        return ResponseEntity.ok(listaCategorias);
     }
 
-    @GetMapping
-    public List<Categoria> buscarPorCategoria(@RequestParam String categoriaNome) {
-        return categoriaService.buscarCategoriaNome(categoriaNome);
+    @GetMapping("/busca")
+    public ResponseEntity<List<CategoriaDTO>> buscarPorCategoria(@RequestParam String categoriaNome) {
+        List<CategoriaDTO> lista = categoriaService.buscarCategoriaNome(categoriaNome)
+                .stream()
+                .map(categoria -> new CategoriaDTO(categoria.getId(), categoria.getCategoriaNome()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(lista);
     }
 }

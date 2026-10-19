@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Catálogo de Serviços · Desafio GC 2026</title>
+    <style>
+        :root {
+            --fundo: #f3f5f8;
+            --papel: #ffffff;
+            --tinta: #1b2733;
+            --tinta-suave: #5b6b7b;
+            --linha: #dde3ea;
+            --marca: #0f2f4d;
+            --marca-clara: #1d5a8f;
+            --ok: #1e7a46;
+            --ok-fundo: #e5f4ec;
+            --alerta: #8a5a00;
+            --alerta-fundo: #fff2d6;
+            --erro: #a3262a;
+            --erro-fundo: #fbe6e6;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--fundo);
+            color: var(--tinta);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            line-height: 1.45;
+        }
+        .topo {
+            background: linear-gradient(135deg, var(--marca), var(--marca-clara));
+            color: #fff;
+            padding: 28px 16px 40px;
+        }
+        .topo .conteudo { max-width: 1120px; margin: 0 auto; }
+        .topo .etiqueta {
+            display: inline-block;
+            font-size: 12px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, .16);
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+        .topo h1 { margin: 10px 0 4px; font-size: clamp(22px, 4vw, 32px); }
+        .topo p { margin: 0; opacity: .9; max-width: 720px; }
+        main { max-width: 1120px; margin: -22px auto 40px; padding: 0 16px; }
+        .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+        @media (max-width: 860px) { .grade { grid-template-columns: 1fr; } }
+        .cartao {
+            background: var(--papel);
+            border: 1px solid var(--linha);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(15, 47, 77, .06);
+        }
+        .cartao h2 { margin: 0 0 4px; font-size: 18px; }
+        .cartao .sub { margin: 0 0 14px; color: var(--tinta-suave); font-size: 14px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+        label small { font-weight: 400; color: var(--tinta-suave); }
+        input[type=text], select, textarea {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #c3ccd6;
+            border-radius: 8px;
+            font: inherit;
+            background: #fff;
+            color: var(--tinta);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid var(--marca-clara);
+            outline-offset: 1px;
+            border-color: var(--marca-clara);
+        }
+        .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 520px) { .duas { grid-template-columns: 1fr; } }
+        .erro-campo { color: var(--erro); font-size: 12px; display: block; margin-top: 3px; }
+        .botoes { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+        button {
+            font: inherit;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+        .btn-principal { background: var(--marca); color: #fff; }
+        .btn-principal:hover { background: var(--marca-clara); }
+        .btn-secundario { background: #fff; color: var(--marca); border-color: var(--marca); }
+        .btn-secundario:hover { background: #eef3f8; }
+        .msg { border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-weight: 600; }
+        .msg.ok { background: var(--ok-fundo); color: var(--ok); border: 1px solid #b9dfc9; }
+        .msg.bad { background: var(--erro-fundo); color: var(--erro); border: 1px solid #efbcbc; }
+        .faixa { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; font-weight: 600; }
+        .faixa.livre { background: var(--ok-fundo); color: var(--ok); }
+        .faixa.parecidos { background: var(--alerta-fundo); color: var(--alerta); }
+        .faixa.duplicado { background: var(--erro-fundo); color: var(--erro); }
+        .vazio { color: var(--tinta-suave); font-size: 14px; }
+        .regras { margin: 10px 0 0; padding-left: 18px; color: var(--tinta-suave); font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--tinta-suave); }
+        th, td { padding: 9px 8px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+        .tabela-rolavel { overflow-x: auto; }
+        .barra { background: #e6ebf1; border-radius: 999px; height: 8px; min-width: 90px; overflow: hidden; }
+        .barra > span { display: block; height: 100%; background: var(--marca-clara); }
+        .barra.forte > span { background: var(--erro); }
+        .selo { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .st-PENDENTE { background: var(--alerta-fundo); color: var(--alerta); }
+        .st-APROVADO { background: var(--ok-fundo); color: var(--ok); }
+        .st-REJEITADO { background: var(--erro-fundo); color: var(--erro); }
+        .busca { display: flex; gap: 8px; margin-bottom: 12px; }
+        .busca input { flex: 1; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        ul.lista { margin: 0; padding-left: 18px; }
+        footer { text-align: center; color: var(--tinta-suave); font-size: 13px; padding: 0 16px 30px; }
+        footer a { color: var(--marca-clara); }
+    </style>
+</head>
+<body>
+
+<header class="topo">
+    <div class="conteudo">
+        <span class="etiqueta">Desafio GC 2026 · MVP</span>
+        <h1>Catálogo de serviços saneado</h1>
+        <p>Antes de criar um serviço, consulte a base: a régua de aderência mostra o que já existe e bloqueia duplicatas.</p>
+    </div>
+</header>
+
+<main>
+
+    <div class="msg ok" th:if="${sucesso}" th:text="${sucesso}"></div>
+    <div class="msg bad" th:if="${erro}" th:text="${erro}"></div>
+
+    <section class="grade">
+
+        <!-- ============================ FORMULÁRIO ============================ -->
+        <article class="cartao">
+            <h2>Novo serviço</h2>
+            <p class="sub">Preencha e clique em <strong>Verificar semelhança</strong> antes de cadastrar.</p>
+
+            <form th:action="@{/web/cadastrar}" th:object="${form}" method="post">
+
+                <label for="categoriaId">Categoria</label>
+                <select id="categoriaId" th:field="*{categoriaId}">
+                    <option value="">Selecione…</option>
+                    <option th:each="c : ${categorias}" th:value="${c.id}" th:text="${c.categoriaNome}"></option>
+                </select>
+                <span class="erro-campo" th:if="${#fields.hasErrors('categoriaId')}" th:errors="*{categoriaId}"></span>
+
+                <div class="duas">
+                    <div>
+                        <label for="codigoServico">Código <small>(máx. 20)</small></label>
+                        <input type="text" id="codigoServico" maxlength="20" th:field="*{codigoServico}" placeholder="Ex.: 5000001">
+                        <span class="erro-campo" th:if="${#fields.hasErrors('codigoServico')}" th:errors="*{codigoServico}"></span>
+                    </div>
+                    <div>
+                        <label for="nomeServico">Nome <small>(máx. 40, limite do SAP)</small></label>
+                        <input type="text" id="nomeServico" maxlength="40" th:field="*{nomeServico}" placeholder="Ex.: Ajudante geral">
+                        <span class="erro-campo" th:if="${#fields.hasErrors('nomeServico')}" th:errors="*{nomeServico}"></span>
+                    </div>
+                </div>
+
+                <label for="descricaoServico">Descrição <small>(opcional, máx. 100)</small></label>
+                <textarea id="descricaoServico" rows="2" maxlength="100" th:field="*{descricaoServico}"></textarea>
+                <span class="erro-campo" th:if="${#fields.hasErrors('descricaoServico')}" th:errors="*{descricaoServico}"></span>
+
+                <div class="duas">
+                    <div>
+                        <label for="unidadeMedidaId">Unidade de medida <small>(opcional)</small></label>
+                        <select id="unidadeMedidaId" th:field="*{unidadeMedidaId}">
+                            <option value="">—</option>
+                            <option th:each="u : ${unidadesMedida}" th:value="${u.id}"
+                                    th:text="${u.codigo + ' - ' + u.descricao}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="unidadeCustoId">Unidade de custo <small>(opcional)</small></label>
+                        <select id="unidadeCustoId" th:field="*{unidadeCustoId}">
+                            <option value="">—</option>
+                            <option th:each="u : ${unidadesCusto}" th:value="${u.id}" th:text="${u.maoDeObra}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="botoes">
+                    <button type="submit" class="btn-secundario" th:formaction="@{/web/verificar}">Verificar semelhança</button>
+                    <button type="submit" class="btn-principal">Cadastrar</button>
+                </div>
+            </form>
+        </article>
+
+        <!-- ============================ VERIFICAÇÃO ============================ -->
+        <article class="cartao">
+            <h2>Verificação de semelhança</h2>
+            <p class="sub">Compara o nome digitado com os serviços da mesma categoria.</p>
+
+            <div th:if="${sugestoes == null}">
+                <p class="vazio">Nenhuma verificação feita ainda. Escolha a categoria, digite o nome e clique em
+                    <strong>Verificar semelhança</strong>.</p>
+                <ul class="regras">
+                    <li><strong>90% ou mais</strong>: serviço duplicado, o cadastro é bloqueado.</li>
+                    <li><strong>60% a 90%</strong>: parecido, aparece como sugestão para você conferir.</li>
+                    <li><strong>Abaixo de 60%</strong>: considerado um serviço novo.</li>
+                </ul>
+            </div>
+
+            <div th:if="${sugestoes != null}">
+                <div class="faixa duplicado" th:if="${statusVerificacao == 'DUPLICADO'}">
+                    Duplicado: já existe um serviço praticamente idêntico. O cadastro será bloqueado.
+                </div>
+                <div class="faixa parecidos" th:if="${statusVerificacao == 'PARECIDOS'}">
+                    Atenção: existem serviços parecidos. Confira antes de cadastrar.
+                </div>
+                <div class="faixa livre" th:if="${statusVerificacao == 'LIVRE'}">
+                    Nenhum serviço parecido nesta categoria. Pode cadastrar.
+                </div>
+
+                <div class="tabela-rolavel" th:if="${!sugestoes.isEmpty()}">
+                    <table>
+                        <thead>
+                        <tr><th>Código</th><th>Nome</th><th>Aderência</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="s : ${sugestoes}">
+                            <td class="mono" th:text="${s.codigoServico()}"></td>
+                            <td th:text="${s.nomeServico()}"></td>
+                            <td>
+                                <strong th:text="${#numbers.formatDecimal(s.aderenciaPercentual(), 1, 1) + '%'}"></strong>
+                                <div class="barra" th:classappend="${s.aderenciaPercentual() >= 90} ? 'forte' : ''">
+                                    <span th:style="'width:' + ${s.aderenciaPercentual()} + '%'"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- ============================ CATÁLOGO ============================ -->
+    <article class="cartao">
+        <h2>Catálogo de serviços</h2>
+        <p class="sub">Serviços já cadastrados. Novos serviços entram como <strong>PENDENTE</strong> até serem aprovados.</p>
+
+        <form class="busca" method="get" th:action="@{/}">
+            <input type="text" name="q" th:value="${q}" placeholder="Buscar pelo nome…" aria-label="Buscar pelo nome">
+            <button type="submit" class="btn-secundario">Buscar</button>
+            <a th:if="${!q.isEmpty()}" th:href="@{/}" style="align-self:center;font-size:14px;">Limpar</a>
+        </form>
+
+        <p class="vazio" th:if="${servicos.isEmpty()}">Nenhum serviço encontrado.</p>
+
+        <div class="tabela-rolavel" th:if="${!servicos.isEmpty()}">
+            <table>
+                <thead>
+                <tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Unidade de medida</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${servicos}">
+                    <td class="mono" th:text="${s.codigoServico}"></td>
+                    <td th:text="${s.nomeServico}"></td>
+                    <td th:text="${s.categoria?.categoriaNome ?: '—'}"></td>
+                    <td th:text="${s.unidadeMedida?.codigo ?: '—'}"></td>
+                    <td><span class="selo" th:classappend="'st-' + ${s.status}" th:text="${s.status}"></span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <!-- ============================ VÍNCULOS ============================ -->
+    <article class="cartao">
+        <h2>Fornecedores e serviços</h2>
+        <p class="sub">Um mesmo serviço do catálogo pode ser usado por vários fornecedores, sem criar duplicatas.</p>
+
+        <form th:action="@{/web/vincular}" method="post">
+            <div class="duas">
+                <div>
+                    <label for="fornecedorId">Fornecedor</label>
+                    <select id="fornecedorId" name="fornecedorId">
+                        <option value="">Selecione…</option>
+                        <option th:each="f : ${fornecedores}" th:value="${f.id}" th:text="${f.rotulo}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label for="codigoServicoVinculo">Serviço <small>(só aprovados)</small></label>
+                    <select id="codigoServicoVinculo" name="codigoServico">
+                        <option value="">Selecione…</option>
+                        <option th:each="s : ${servicosVinculaveis}" th:value="${s.codigoServico}"
+                                th:text="${s.codigoServico + ' - ' + s.nomeServico}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="botoes">
+                <button type="submit" class="btn-principal">Vincular</button>
+            </div>
+        </form>
+
+        <div class="tabela-rolavel" style="margin-top:16px;">
+            <table>
+                <thead>
+                <tr><th>Fornecedor</th><th>Serviços vinculados</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="f : ${fornecedores}">
+                    <td th:text="${f.rotulo}"></td>
+                    <td>
+                        <span class="vazio" th:if="${f.servicos.isEmpty()}">Nenhum serviço vinculado.</span>
+                        <ul class="lista" th:if="${!f.servicos.isEmpty()}">
+                            <li th:each="nome : ${f.servicos}" th:text="${nome}"></li>
+                        </ul>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+</main>
+
+<footer>
+    API REST documentada em <a th:href="@{/swagger-ui.html}">/swagger-ui.html</a>
+</footer>
+
+</body>
+</html>
