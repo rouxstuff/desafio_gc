@@ -2,6 +2,7 @@ package gerdauGrupo16.desafiogc.service;
 
 import gerdauGrupo16.desafiogc.model.entity.Categoria;
 import gerdauGrupo16.desafiogc.repository.CategoriaRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
@@ -20,6 +21,10 @@ public class CategoriaService {
         return categoriaRepository.findByCategoriaNomeContaining(padronizar(categoriaNome));
     }
 
+    // [NOVO, do Kaio] usado pelo dropdown de categoria e pelo GET /categoria
+    public List<Categoria> listarTodasCategorias() {
+        return categoriaRepository.findAll(Sort.by(Sort.Direction.DESC, "categoriaNome"));
+    }
 
     private String padronizar(String texto) {
         String semAcento = Normalizer

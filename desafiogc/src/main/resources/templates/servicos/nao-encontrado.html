@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
 </head>
 <body>
-<header th:replace="~{fragments/layout :: topo}"></header>
+<header th:replace="~{fragments/layout :: topo('consulta')}"></header>
 <section th:replace="~{fragments/layout :: hero(${nomeServico})}"></section>
 
 <main>
@@ -30,11 +30,14 @@
                         <p class="nota">Será que é um destes? Confira antes de cadastrar:</p>
                         <div class="similares">
                             <a th:each="s : ${similares}"
-                               th:href="@{/servicos/detalhes(nome=${s.nomeServico})}"
-                               th:text="${s.nomeServico}">ELETRICISTA</a>
+                               th:href="@{/servicos/detalhes(codigo=${s.codigoServico()})}">
+                                <span th:text="${s.nomeServico()}">ELETRICISTA</span>
+                                <small th:if="${s.aderenciaPercentual() >= 60}"
+                                       th:text="${#numbers.formatDecimal(s.aderenciaPercentual(), 1, 0) + '%'}">80%</small>
+                            </a>
                         </div>
                     </div>
-                    <p class="nota" th:if="${similares.isEmpty()}">Nenhum serviço parecido encontrado.</p>
+<p class="nota" th:if="${similares.isEmpty()}">Nenhum serviço parecido encontrado.</p>
 
                     <a class="acao acao-link" th:href="@{/servicos/novo(nome=${nomeNovo})}">Cadastrar novo serviço</a>
                 </aside>

@@ -10,12 +10,14 @@
 </head>
 
 <body>
-<!-- FRAGMENTO 2: barra do topo -->
-<header class="topo" th:fragment="topo">
+<!-- FRAGMENTO 2: barra do topo. [ALTERADO] agora recebe qual item do menu fica marcado -->
+<header class="topo" th:fragment="topo(ativa)">
     <div class="container">
         <a class="marca" th:href="@{/servicos}">Gerdau <span>Catálogo de Serviços</span></a>
         <nav class="menu">
-            <a class="ativo" th:href="@{/servicos}">Consulta</a>
+            <a th:classappend="${ativa == 'consulta'} ? 'ativo'" th:href="@{/servicos}">Consulta</a>
+            <a th:classappend="${ativa == 'catalogo'} ? 'ativo'" th:href="@{/catalogo}">Catálogo</a>
+            <a th:classappend="${ativa == 'vinculos'} ? 'ativo'" th:href="@{/vinculos}">Fornecedores</a>
         </nav>
     </div>
 </header>
@@ -39,6 +41,14 @@
                 <button type="submit">Buscar</button>
             </form>
         </div>
+    </div>
+</section>
+
+<!-- FRAGMENTO 6 [NOVO]: faixa azul sem busca, para Catálogo e Fornecedores -->
+<section class="hero" th:fragment="heroSimples(titulo, texto)">
+    <div class="container">
+        <h1 th:text="${titulo}">Título</h1>
+        <p th:text="${texto}">Texto</p>
     </div>
 </section>
 

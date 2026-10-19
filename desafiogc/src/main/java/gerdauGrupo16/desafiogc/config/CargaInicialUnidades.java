@@ -2,6 +2,7 @@ package gerdauGrupo16.desafiogc.config;
 
 import gerdauGrupo16.desafiogc.model.entity.Categoria;
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
+import gerdauGrupo16.desafiogc.model.entity.FornecedorServico;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeMedida;
@@ -21,17 +22,21 @@ public class CargaInicialUnidades implements CommandLineRunner {
     private final ServicoRepository servicoRepository;
     private final CategoriaRepository categoriaRepository;
     private final FornecedorRepository fornecedorRepository;
+    // [NOVO] para o exemplo de vínculo fornecedor <-> serviço
+    private final FornecedorServicoRepository fornecedorServicoRepository;
 
     public CargaInicialUnidades(UnidadeCustoRepository custoRepository,
                                 UnidadeMedidaRepository medidaRepository,
                                 ServicoRepository servicoRepository,
                                 CategoriaRepository categoriaRepository,
-                                FornecedorRepository fornecedorRepository) {
+                                FornecedorRepository fornecedorRepository,
+                                FornecedorServicoRepository fornecedorServicoRepository) {
         this.custoRepository = custoRepository;
         this.medidaRepository = medidaRepository;
         this.servicoRepository = servicoRepository;
         this.categoriaRepository = categoriaRepository;
         this.fornecedorRepository = fornecedorRepository;
+        this.fornecedorServicoRepository = fornecedorServicoRepository;
     }
 
     @Override
@@ -39,9 +44,9 @@ public class CargaInicialUnidades implements CommandLineRunner {
     public void run(String... args) {
         if (fornecedorRepository.count() == 0){
             fornecedorRepository.saveAll(List.of(
-               new Fornecedor(UUID.randomUUID().toString()),
-               new Fornecedor(UUID.randomUUID().toString()),
-               new Fornecedor(UUID.randomUUID().toString())
+                    new Fornecedor(UUID.randomUUID().toString()),
+                    new Fornecedor(UUID.randomUUID().toString()),
+                    new Fornecedor(UUID.randomUUID().toString())
             ));
         }
 
@@ -53,13 +58,34 @@ public class CargaInicialUnidades implements CommandLineRunner {
             ));
         }
 
+        // [ALTERADO] Os 4 serviços do seed agora têm categoria. Sem categoria, a régua (que compara
+        // por categoria) nunca os enxergaria e o unique (categoria_id, nome_servico) não valeria para eles.
+        // ATENÇÃO: as categorias abaixo são um PALPITE; ajuste para a realidade da Gerdau.
         if (servicoRepository.count() == 0) {
+            Categoria civil = buscarCategoria("CIVIL");
+            Categoria eletromecanica = buscarCategoria("ELETROMEC");
+            Categoria facilities = buscarCategoria("FACILITIES");
+
             servicoRepository.saveAll(List.of(
-                    new Servico("4090071", "ADMINISTRATIVO"),
-                    new Servico("4096348", "AJUDANTE"),
-                    new Servico("4047850", "MANUTENCAO"),
-                    new Servico("4050505", "ELETRICISTA")
+                    servico("4090071", "ADMINISTRATIVO", facilities),
+                    servico("4096348", "AJUDANTE", civil),
+                    servico("4047850", "MANUTENCAO", eletromecanica),
+                    servico("4050505", "ELETRICISTA", eletromecanica)
             ));
+        }
+
+        // [NOVO] Exemplo do caso "Fornecedor A e B usam o MESMO serviço Ajudante de Civil":
+        // um serviço no catálogo, dois vínculos.
+        if (fornecedorServicoRepository.count() == 0) {
+            List<Fornecedor> fornecedores = fornecedorRepository.findAll();
+            servicoRepository.findById("4096348").ifPresent(ajudante -> {
+                if (fornecedores.size() >= 2) {
+                    fornecedorServicoRepository.saveAll(List.of(
+                            new FornecedorServico(fornecedores.get(0), ajudante),
+                            new FornecedorServico(fornecedores.get(1), ajudante)
+                    ));
+                }
+            });
         }
 
         if (medidaRepository.count() == 0) {
@@ -99,5 +125,16 @@ public class CargaInicialUnidades implements CommandLineRunner {
                     new UnidadeCusto("Retroativo", "É um item de ajuste financeiro (pagamento retroativo por reclassificação, correção de tarifa, migração de sistema, etc.)"),
                     new UnidadeCusto("Itens que não são mão de obra", "Todo o restante, como materiais aplicados nos serviços, equipamentos, ferramentas, veículos, custos indiretos, transporte etc.")));
         }
+    }
+
+    // [NOVO] auxiliares do seed
+    private Categoria buscarCategoria(String trechoDoNome) {
+        return categoriaRepository.findByCategoriaNomeContaining(trechoDoNome).stream().findFirst().orElse(null);
+    }
+
+    private Servico servico(String codigo, String nome, Categoria categoria) {
+        Servico s = new Servico(codigo, nome);
+        s.setCategoria(categoria);
+        return s;
     }
 }

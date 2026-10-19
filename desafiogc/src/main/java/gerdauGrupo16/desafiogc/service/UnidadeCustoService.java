@@ -23,6 +23,11 @@ public class UnidadeCustoService {
         this.repository = repository;
     }
 
+    // [NOVO, do Kaio] ordenada por nome, usada pelo GET /unidades-custo
+    public List<UnidadeCusto> listarTodasUnidadesCustos(){
+        return repository.findAll(Sort.by(Sort.Direction.ASC, "maoDeObra"));
+    }
+
     public List<UnidadeCusto> listarTodos(){
         return repository.findAll();
     }

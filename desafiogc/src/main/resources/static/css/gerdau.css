@@ -256,3 +256,30 @@ tbody tr:hover { background: var(--azul-claro); }
 
 .campo { width: 100%; padding: 13px 16px; font-size: 1rem; border: 2px solid var(--cinza-borda); border-radius: var(--raio); }
 .campo:focus { outline: none; border-color: var(--azul); }
+
+/* ================= [NOVO] estilos das telas Catálogo, Fornecedores e do cadastro completo ================= */
+select.campo { background: var(--branco); }
+textarea.campo { resize: vertical; font-family: inherit; }
+.rotulo small { font-weight: 400; color: var(--cinza-medio); }
+.duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.duas-colunas .rotulo { margin-top: 0; }
+@media (max-width: 760px) { .duas-colunas { grid-template-columns: 1fr; } }
+
+/* selos de status do serviço */
+.selo.aprovado  { background: #e3f4e8; color: #1b6b36; margin-bottom: 0; }
+.selo.pendente  { background: #fff3cd; color: #7a5b00; margin-bottom: 0; }
+.selo.rejeitado { background: #fbe4e1; color: #a02a1c; margin-bottom: 0; }
+.resultado > .selo.pendente, .resultado > .selo.rejeitado { margin-bottom: 12px; }
+
+/* porcentagem de aderência dentro do chip de "parecidos" */
+.similares a small { margin-left: 6px; font-weight: 700; color: var(--cinza-medio); }
+
+/* mensagens de sucesso e erro */
+.msg { padding: 12px 14px; border-radius: 6px; font-weight: 600; margin: 0 0 18px; }
+.msg-ok   { background: #e3f4e8; color: #1b6b36; border-left: 4px solid #1b6b36; }
+.msg-erro { background: #fbe4e1; color: #a02a1c; border-left: 4px solid #a02a1c; }
+
+/* filtro do catálogo */
+.filtro { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; }
+.filtro .campo { flex: 1; }
+.filtro .acao { width: auto; margin-top: 0; padding: 13px 22px; }

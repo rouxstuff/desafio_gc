@@ -5,7 +5,7 @@
 </head>
 
 <body>
-<header th:replace="~{fragments/layout :: topo}"></header>
+<header th:replace="~{fragments/layout :: topo('consulta')}"></header>
 <section th:replace="~{fragments/layout :: hero(${nomeServico})}"></section>
 
 <main>
@@ -14,7 +14,7 @@
             <ol th:replace="~{fragments/layout :: passos(2)}"></ol>
 
             <form th:action="@{/servicos/confirmar}" method="post">
-                <input type="hidden" name="nome" th:value="${servico.nomeServico}">
+                <input type="hidden" name="codigo" th:value="${servico.codigoServico}">
 
                 <div class="grade">
                     <div>
@@ -28,6 +28,15 @@
                             <span th:text="${servico.nomeServico}">ELETRICISTA</span>
                             <a th:href="@{/servicos}" style="color:var(--azul);font-size:.85rem;font-weight:600;text-decoration:none">Trocar</a>
                         </div>
+
+                        <!-- [NOVO] unidade de medida do contrato (opcional) -->
+                        <label class="rotulo" for="unidadeMedidaId">Unidade de medida (opcional)</label>
+                        <select class="campo" id="unidadeMedidaId" name="unidadeMedidaId" style="margin-bottom:20px">
+                            <option value="">Selecione…</option>
+                            <option th:each="u : ${unidadesMedida}" th:value="${u.id}"
+                                    th:text="${u.codigo + ' - ' + u.descricao}"
+                                    th:selected="${servico.unidadeMedida != null and servico.unidadeMedida.id == u.id}"></option>
+                        </select>
 
                         <span class="rotulo">Adicionais deste contrato (opcional)</span>
                         <div class="dd">
@@ -51,9 +60,16 @@
                     </div>
 
                     <aside class="resultado" aria-live="polite">
-                        <span class="selo existe">✔ Serviço já cadastrado</span>
+                        <span class="selo existe" th:if="${servico.status.name() == 'APROVADO'}">✔ Serviço já cadastrado</span>
+                        <span class="selo pendente" th:if="${servico.status.name() == 'PENDENTE'}">Cadastrado, aguardando aprovação</span>
+                        <span class="selo rejeitado" th:if="${servico.status.name() == 'REJEITADO'}">Serviço rejeitado</span>
                         <p class="codigo-grande" th:text="${servico.nomeServico}">ELETRICISTA</p>
-                        <ul class="resumo-ad oculto" id="resumo"></ul>
+                        <p class="nome">
+                            Código <b th:text="${servico.codigoServico}">4096348</b>
+                            <span th:if="${servico.categoria != null}"> · <span th:text="${servico.categoria.categoriaNome}">CIVIL</span></span>
+                            <span th:if="${servico.unidadeMedida != null}"> · <span th:text="${servico.unidadeMedida.codigo}">H</span></span>
+                        </p>
+<ul class="resumo-ad oculto" id="resumo"></ul>
                         <p class="nota" id="nota">Serviço encontrado no catálogo. Marque os adicionais, se algum se aplica.</p>
                         <button type="submit" class="acao sec">Confirmar serviço</button>
                     </aside>

@@ -1,5 +1,6 @@
 package gerdauGrupo16.desafiogc.model.unitys;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,10 +20,10 @@ public class UnidadeMedida {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "Codigo")
+    @Column(name = "codigo")
     private String codigo;
 
-    @Column(name = "Descricao")
+    @Column(name = "descricao")
     private String descricao;
 
     public UnidadeMedida(String codigo, String descricao){
@@ -30,6 +31,7 @@ public class UnidadeMedida {
         this.descricao = descricao;
     }
 
+    @JsonIgnore
     @OneToMany(mappedBy = "unidadeMedida")
     private List<Servico> servico;
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
 </head>
 <body>
-<header th:replace="~{fragments/layout :: topo}"></header>
+<header th:replace="~{fragments/layout :: topo('consulta')}"></header>
 <section th:replace="~{fragments/layout :: hero(${nomeServico})}"></section>
 
 <main>
@@ -19,6 +19,8 @@
             <h2 th:text="${titulo}">Serviço confirmado</h2>
             <p style="font-size:1.4rem;font-weight:700;margin:0 0 8px" th:text="${servicoNome}"></p>
             <p class="nota" th:text="${mensagem}">Mensagem</p>
+
+            <p class="nota" th:if="${medida != null}">Unidade de medida: <b th:text="${medida}">H - Hora</b></p>
 
             <span class="rotulo" th:unless="${itens.isEmpty()}">Adicionais marcados</span>
             <ul class="resumo-ad" th:unless="${itens.isEmpty()}">

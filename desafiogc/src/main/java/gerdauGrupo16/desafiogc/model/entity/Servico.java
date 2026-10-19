@@ -1,24 +1,34 @@
 package gerdauGrupo16.desafiogc.model.entity;
 
+import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeMedida;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name="servico")
+@Table(name="servico",  uniqueConstraints = @UniqueConstraint(columnNames = {"categoria_id", "nome_servico"}))
 @Getter @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class Servico {
 
     @Id
-    @Column(length = 20)
-    private String codigo;
+    @Column(name = "codigo_servico", length = 20)
+    private String codigoServico;
 
-    @Column(nullable = false, unique = true, length = 40)
+    @Column(name = "nome_servico", nullable = false, length = 40)
     private String nomeServico;
+
+    @Column(name = "descricao_servico", nullable = true, length = 100)
+    private String descricaoServico;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusServico status = StatusServico.APROVADO;
 
     @ManyToOne
     @JoinColumn(name = "unidade_custo_id", nullable = true)
@@ -33,12 +43,8 @@ public class Servico {
     @JoinColumn(name = "categoria_id", nullable = true)
     private Categoria categoria;
 
-    @ManyToOne
-    @JoinColumn(name = "fornecedor_id", nullable = true)
-    private Fornecedor fornecedor;
-
-    public Servico(String codigo, String nomeServico) {
-        this.codigo = codigo;
+    public Servico(String codigoServico, String nomeServico) {
+        this.codigoServico = codigoServico;
         this.nomeServico = nomeServico;
     }
 }
