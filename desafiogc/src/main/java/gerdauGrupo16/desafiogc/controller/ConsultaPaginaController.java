@@ -1,14 +1,17 @@
 package gerdauGrupo16.desafiogc.controller;
 
 import gerdauGrupo16.desafiogc.model.entity.Servico;
+import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.service.ServicoService;
 import gerdauGrupo16.desafiogc.service.UnidadeCustoService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,5 +80,27 @@ public class ConsultaPaginaController {
         model.addAttribute("nomeNovo", nome);
         model.addAttribute("similares", service.similares(nome));
         return "servicos/nao-encontrado";
+    }
+
+    @PostMapping("/servicos/confirmar")
+    public String confirmar(@RequestParam String nome,
+                            @RequestParam(name = "adicionais", required = false) List<Long> ids,
+                            Model model) {
+        Optional<Servico> achado = service.buscarPorNomeExato(nome);
+        if (achado.isEmpty()) {
+            return "redirect:/servicos";
+        }
+
+        List<String> nomes = new ArrayList<>();
+        for (UnidadeCusto adicional : adicionaisService.buscarPorIds(ids)) {
+            nomes.add(adicional.getMaoDeObra());
+        }
+
+        model.addAttribute("nomeServico", "");
+        model.addAttribute("titulo", "Serviço confirmado");
+        model.addAttribute("servicoNome", achado.get().getNomeServico());
+        model.addAttribute("mensagem", "O serviço já existe no catálogo.");
+        model.addAttribute("itens", nomes);
+        return "servicos/concluido";
     }
 }

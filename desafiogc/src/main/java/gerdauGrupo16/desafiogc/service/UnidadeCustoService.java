@@ -27,6 +27,13 @@ public class UnidadeCustoService {
         return repository.findAll();
     }
 
+    public List<UnidadeCusto> buscarPorIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllById(ids);
+    }
+
     public Map<String, List<UnidadeCusto>> listarAdicionaisAgrupados() {
         Map<String, List<UnidadeCusto>> grupos = new LinkedHashMap<>();
         ORDEM_GRUPOS.forEach(g -> grupos.put(g, new ArrayList<>()));
