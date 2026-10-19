@@ -253,3 +253,6 @@ tbody tr:hover { background: var(--azul-claro); }
 .similares a:hover { background: var(--azul-claro); }
 .tabela-link { color: var(--azul); font-weight: 600; text-decoration: none; }
 .acao-link { display:block; text-align:center; text-decoration:none; }
+
+.campo { width: 100%; padding: 13px 16px; font-size: 1rem; border: 2px solid var(--cinza-borda); border-radius: var(--raio); }
+.campo:focus { outline: none; border-color: var(--azul); }

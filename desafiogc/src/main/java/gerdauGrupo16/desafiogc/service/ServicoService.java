@@ -13,6 +13,7 @@ import java.util.Optional;
 
 @Service
 public class ServicoService {
+    public static final int LIMITE_SAP = 40;
 
     private final ServicoRepository repository;
 

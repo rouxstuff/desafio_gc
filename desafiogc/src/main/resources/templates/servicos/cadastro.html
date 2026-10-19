@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Cadastrar novo serviço')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo}"></header>
+<section th:replace="~{fragments/layout :: hero('')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <ol th:replace="~{fragments/layout :: passos(1)}"></ol>
+
+            <form th:action="@{/servicos/novo}" method="post">
+                <div class="grade">
+                    <div>
+                        <label class="rotulo" for="nomeServico">Nome do novo serviço</label>
+                        <input class="campo" type="text" id="nomeServico" name="nomeServico"
+                               th:value="${nomeNovo}" th:data-limite="${limite}" autocomplete="off" autofocus>
+                        <p class="nota" style="margin-top:8px">
+                            Use só o nome do cargo ou da função. Hora extra, insalubridade e outros adicionais não entram no nome.
+                        </p>
+
+                        <div th:if="${!similares.isEmpty()}">
+                            <span class="rotulo" style="margin-top:20px">Já existe algum destes?</span>
+                            <div class="similares">
+                                <a th:each="s : ${similares}"
+                                   th:href="@{/servicos/detalhes(nome=${s.nomeServico})}"
+                                   th:text="${s.nomeServico}"></a>
+                            </div>
+                        </div>
+                        <p class="nota" th:if="${similares.isEmpty()}">Nenhum serviço parecido encontrado.</p>
+                    </div>
+
+                    <aside class="resultado" aria-live="polite">
+                        <span class="selo novo">Novo serviço</span>
+                        <div class="contador">
+                            <span>Nome do serviço (SAP)</span>
+                            <span id="cont" th:text="${tamanho + ' / ' + limite}">8 / 40</span>
+                        </div>
+                        <div class="barra">
+                            <i id="barra" th:classappend="${estourou} ? 'estourou'" th:style="'width:' + ${porcentagem} + '%'"></i>
+                        </div>
+                        <p class="erro" th:if="${erro != null}" th:text="${erro}"></p>
+                        <button type="submit" class="acao" id="botao" th:disabled="${estourou}">Solicitar novo serviço</button>
+                    </aside>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+<script th:src="@{/js/cadastro.js}"></script>
+</body>
+</html>
