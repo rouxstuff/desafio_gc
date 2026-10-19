@@ -32,4 +32,4 @@ public class CategoriaController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(lista);
     }
-}
+}
