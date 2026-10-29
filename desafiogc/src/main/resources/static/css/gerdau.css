@@ -283,3 +283,65 @@ textarea.campo { resize: vertical; font-family: inherit; }
 .filtro { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; }
 .filtro .campo { flex: 1; }
 .filtro .acao { width: auto; margin-top: 0; padding: 13px 22px; }
+
+/* Tela de Login */
+.login-pagina {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px;
+    background: linear-gradient(135deg, var(--azul-escuro), var(--azul));
+}
+
+.login-cartao {
+    width: 100%;
+    max-width: 420px;
+    background: var(--branco);
+    border-radius: var(--raio);
+    box-shadow: 0 12px 40px rgba(10, 37, 64, .35);
+    border-top: 4px solid var(--amarelo);
+    padding: 36px 32px 32px;
+}
+
+.login-logo {
+    display: block;
+    text-align: center;
+    margin: 0 0 20px;
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--azul-escuro);
+}
+
+.login-logo img {
+    height: 44px; width: auto;
+}
+
+.login-cartao h1 {
+    margin: 0 0 4px;
+    text-align: center;
+    font-size: 1.4rem;
+    color: var(--azul-escuro);
+}
+
+.login-sub {
+    margin: 0 0 24px;
+    text-align: center;
+    color: var(--cinza-medio);
+    font-size: .92rem; }
+
+.login-campo { margin-bottom: 18px; }
+
+.senha-wrap { position: relative; }
+
+.senha-wrap .campo { padding-right: 84px; }
+
+.senha-mostrar {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--azul); font-size: .85rem; font-weight: 600; cursor: pointer; padding: 6px 8px;
+}
+
+.alerta.login { background: #fdecea; border-left-color: #c0392b; color: #7b1f14; }
+.login-cartao .acao { margin-top: 6px; }
+.login-ajuda { margin: 18px 0 0; text-align: center; color: var(--cinza-medio); font-size: .85rem; }
