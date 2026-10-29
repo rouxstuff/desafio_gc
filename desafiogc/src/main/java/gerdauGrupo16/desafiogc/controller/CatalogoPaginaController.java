@@ -4,6 +4,7 @@ import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
 import gerdauGrupo16.desafiogc.service.FornecedorService;
+import gerdauGrupo16.desafiogc.service.FornecedorServicoService;
 import gerdauGrupo16.desafiogc.service.ServicoService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,6 +13,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -30,6 +32,7 @@ public class CatalogoPaginaController {
 
     private final ServicoService servicoService;
     private final FornecedorService fornecedorService;
+    private final FornecedorServicoService fornecedorServicoService;
 
     @GetMapping("/catalogo")
     public String catalogo(@RequestParam(value = "q", required = false) String q, Model model) {
@@ -42,12 +45,22 @@ public class CatalogoPaginaController {
     }
 
     @GetMapping("/vinculos")
-    public String vinculos(Model model) {
+    public String vinculos(@RequestParam(value = "servicoFiltro", required = false) String servicoFiltro,
+                           Model model) {
         model.addAttribute("fornecedores", montarFornecedores());
-        // o dropdown só oferece APROVADOS (o bloqueio de verdade está no FornecedorService)
         model.addAttribute("servicosVinculaveis", servicoService.listarTodos().stream()
                 .filter(s -> s.getStatus() == StatusServico.APROVADO)
                 .sorted(Comparator.comparing(Servico::getNomeServico)).toList());
+
+        // novo: só busca se um serviço foi escolhido
+        if (servicoFiltro != null && !servicoFiltro.isBlank()) {
+            List<String> vinculados = fornecedorServicoService.buscarVinculosServico(servicoFiltro).stream()
+                    .map(v -> rotulo(v.getFornecedor()))   // reaproveita o seu método rotulo()
+                    .toList();
+            model.addAttribute("fornecedoresVinculados", vinculados);
+        }
+        model.addAttribute("servicoFiltro", servicoFiltro);
+
         return "servicos/vinculos";
     }
 
@@ -67,6 +80,7 @@ public class CatalogoPaginaController {
         }
         return "redirect:/vinculos";
     }
+
 
     private List<LinhaFornecedor> montarFornecedores() {
         return fornecedorService.buscarTodos().stream()

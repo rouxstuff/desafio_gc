@@ -57,8 +57,6 @@ public class FornecedorService {
         }
         fornecedorServicoRepository.save(new FornecedorServico(fornecedor, servico));
     }
-
-    /** [NOVO, do Kaio] Lista os serviços aos quais o fornecedor está vinculado. */
     @Transactional(readOnly = true)
     public List<Servico> listarServicosDoFornecedor(Long fornecedorId) {
         if (!fornecedorRepository.existsById(fornecedorId)) {
@@ -68,4 +66,5 @@ public class FornecedorService {
                 .map(FornecedorServico::getServico)
                 .toList();
     }
+
 }

@@ -39,7 +39,7 @@ public class ConsultaPaginaController {
     @GetMapping("/")
     public String raiz() {
         return "redirect:/servicos";
-    } //todo: redirect to /login
+    }
 
     @GetMapping("/servicos")
     public String consultar(@RequestParam(required = false) String nomeServico, Model model,

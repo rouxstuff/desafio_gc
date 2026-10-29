@@ -36,20 +36,25 @@
             </form>
 
             <h2 style="margin-top:32px">Vínculos atuais</h2>
-            <table>
-                <thead><tr><th>Fornecedor</th><th>Serviços vinculados</th></tr></thead>
-                <tbody>
-                <tr th:each="f : ${fornecedores}">
-                    <td th:text="${f.rotulo}">Fornecedor 1</td>
-                    <td>
-                        <span class="vazio" th:if="${f.servicos.isEmpty()}">Nenhum serviço vinculado.</span>
-                        <ul class="resumo-ad" th:unless="${f.servicos.isEmpty()}">
-                            <li th:each="nome : ${f.servicos}" th:text="${nome}"></li>
-                        </ul>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+
+            <form th:action="@{/vinculos}" method="get">
+                <label class="rotulo" for="filtroServico">Serviços</label>
+                <select class="campo" id="filtroServico" name="servicoFiltro" onchange="this.form.submit()">
+                    <option value="">—</option>
+                    <option th:each="s : ${servicosVinculaveis}"
+                            th:value="${s.codigoServico}"
+                            th:text="${s.codigoServico + ' - ' + s.nomeServico}"
+                            th:selected="${servicoFiltro == s.codigoServico}"></option>
+                </select>
+            </form>
+
+            <ul th:if="${fornecedoresVinculados != null}">
+                <li th:each="rotulo : ${fornecedoresVinculados}" th:text="${rotulo}"></li>
+            </ul>
+            <p th:if="${fornecedoresVinculados != null and #lists.isEmpty(fornecedoresVinculados)}">
+                Nenhum fornecedor vinculado a este serviço.
+            </p>
+
         </div>
     </div>
 </main>

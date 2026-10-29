@@ -10,4 +10,7 @@ public interface FornecedorServicoRepository extends JpaRepository<FornecedorSer
     boolean existsByFornecedor_IdAndServico_CodigoServico(Long fornecedorId, String codigoServico);
 
     List<FornecedorServico> findByFornecedor_Id(Long fornecedorId);
+
+    List<FornecedorServico> findByServico_CodigoServico(String codigoServico);
+
 }

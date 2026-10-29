@@ -4,6 +4,7 @@ import gerdauGrupo16.desafiogc.model.entity.Categoria;
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.FornecedorServico;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
+import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeMedida;
 import gerdauGrupo16.desafiogc.repository.*;
@@ -12,7 +13,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 
 @Component
 public class CargaInicialUnidades implements CommandLineRunner {
@@ -42,52 +42,7 @@ public class CargaInicialUnidades implements CommandLineRunner {
     @Override
     @NullMarked
     public void run(String... args) {
-        if (fornecedorRepository.count() == 0){
-            fornecedorRepository.saveAll(List.of(
-                    new Fornecedor(UUID.randomUUID().toString()),
-                    new Fornecedor(UUID.randomUUID().toString()),
-                    new Fornecedor(UUID.randomUUID().toString())
-            ));
-        }
-
-        if (categoriaRepository.count() == 0) {
-            categoriaRepository.saveAll(List.of(
-                    new Categoria("Civil".toUpperCase()),
-                    new Categoria("Eletromecânica".toUpperCase()),
-                    new Categoria("Facilities".toUpperCase())
-            ));
-        }
-
-        // [ALTERADO] Os 4 serviços do seed agora têm categoria. Sem categoria, a régua (que compara
-        // por categoria) nunca os enxergaria e o unique (categoria_id, nome_servico) não valeria para eles.
-        // ATENÇÃO: as categorias abaixo são um PALPITE; ajuste para a realidade da Gerdau.
-        if (servicoRepository.count() == 0) {
-            Categoria civil = buscarCategoria("CIVIL");
-            Categoria eletromecanica = buscarCategoria("ELETROMEC");
-            Categoria facilities = buscarCategoria("FACILITIES");
-
-            servicoRepository.saveAll(List.of(
-                    servico("4090071", "ADMINISTRATIVO", facilities),
-                    servico("4096348", "AJUDANTE", civil),
-                    servico("4047850", "MANUTENCAO", eletromecanica),
-                    servico("4050505", "ELETRICISTA", eletromecanica)
-            ));
-        }
-
-        // [NOVO] Exemplo do caso "Fornecedor A e B usam o MESMO serviço Ajudante de Civil":
-        // um serviço no catálogo, dois vínculos.
-        if (fornecedorServicoRepository.count() == 0) {
-            List<Fornecedor> fornecedores = fornecedorRepository.findAll();
-            servicoRepository.findById("4096348").ifPresent(ajudante -> {
-                if (fornecedores.size() >= 2) {
-                    fornecedorServicoRepository.saveAll(List.of(
-                            new FornecedorServico(fornecedores.get(0), ajudante),
-                            new FornecedorServico(fornecedores.get(1), ajudante)
-                    ));
-                }
-            });
-        }
-
+        // 1) Tabelas de apoio (oficiais da Gerdau): unidades de medida e de custo
         if (medidaRepository.count() == 0) {
             medidaRepository.saveAll(List.of(
                     new UnidadeMedida("CM", "Centímetro"),
@@ -108,6 +63,7 @@ public class CargaInicialUnidades implements CommandLineRunner {
                     new UnidadeMedida("TO", "Tonelada"),
                     new UnidadeMedida("ST", "Unidade (peça)")));
         }
+
         if (custoRepository.count() == 0) {
             custoRepository.saveAll(List.of(
                     new UnidadeCusto("Hora normal", "Hora de trabalho em jornada padrão, sem nenhum adicional aplicado — a hora 'base' da função."),
@@ -125,16 +81,109 @@ public class CargaInicialUnidades implements CommandLineRunner {
                     new UnidadeCusto("Retroativo", "É um item de ajuste financeiro (pagamento retroativo por reclassificação, correção de tarifa, migração de sistema, etc.)"),
                     new UnidadeCusto("Itens que não são mão de obra", "Todo o restante, como materiais aplicados nos serviços, equipamentos, ferramentas, veículos, custos indiretos, transporte etc.")));
         }
+
+        // 2) Categorias (os 3 grupos de serviço da base)
+        if (categoriaRepository.count() == 0) {
+            categoriaRepository.saveAll(List.of(
+                    new Categoria("Civil".toUpperCase()),
+                    new Categoria("Eletromecânica".toUpperCase()),
+                    new Categoria("Facilities".toUpperCase())
+            ));
+        }
+
+        // 3) Fornecedores FICTÍCIOS (a base real é anonimizada). Todos com código e nome preenchidos.
+        if (fornecedorRepository.count() == 0) {
+            fornecedorRepository.saveAll(List.of(
+                    fornecedor("F001", "Alfa Engenharia"),
+                    fornecedor("F002", "Beta Serviços Industriais"),
+                    fornecedor("F003", "Gama Construções"),
+                    fornecedor("F004", "Delta Montagens"),
+                    fornecedor("F005", "Ômega Facilities"),
+                    fornecedor("F006", "Sigma Terceirização")   // começa SEM vínculos, para vincular ao vivo
+            ));
+        }
+
+        // 4) Serviços. Nome = só a função (sem adicionais), em MAIÚSCULO e sem acento, até 40 caracteres.
+        if (servicoRepository.count() == 0) {
+            Categoria civil = buscarCategoria("CIVIL");
+            Categoria eletromecanica = buscarCategoria("ELETROMEC");
+            Categoria facilities = buscarCategoria("FACILITIES");
+            UnidadeMedida h = medida("H"), m = medida("M"), st = medida("ST"), sv = medida("SV"), mon = medida("MON");
+            UnidadeCusto periculosidade = custo("Adicional periculosidade (hora)");
+            UnidadeCusto postoMensal = custo("Posto mensal (equipe fixa)");
+
+            servicoRepository.saveAll(List.of(
+                    // --- os 4 originais do seed, agora com medida e descrição ---
+                    servico("4090071", "ADMINISTRATIVO", "Auxiliar de rotina administrativa", facilities, h, null, StatusServico.APROVADO),
+                    servico("4096348", "AJUDANTE", "Ajudante de obras civis", civil, h, null, StatusServico.APROVADO),
+                    servico("4047850", "MANUTENCAO", "Manutenção geral de equipamentos", eletromecanica, sv, null, StatusServico.APROVADO),
+                    servico("4050505", "ELETRICISTA", "Eletricista de manutenção", eletromecanica, h, periculosidade, StatusServico.APROVADO),
+
+                    // --- mesmo nome em outra categoria (a tela pede para escolher) ---
+                    servico("4096350", "AJUDANTE", "Ajudante de montagem eletromecânica", eletromecanica, h, null, StatusServico.APROVADO),
+
+                    // --- base para a régua de aderência ---
+                    servico("4101010", "MECANICO MONTADOR", "Mecânico de montagem industrial", eletromecanica, h, null, StatusServico.APROVADO),
+                    servico("4101020", "TECNICO SEGURANCA TRABALHO JUNIOR", "Técnico de segurança, nível júnior", facilities, h, null, StatusServico.APROVADO),
+                    servico("4101030", "VIGIA", "Vigilância em posto fixo, faturada por mês", facilities, mon, postoMensal, StatusServico.APROVADO),
+                    servico("4101040", "FURACAO EM CONCRETO COM COROA 1/2", "Furação com coroa diamantada de 1/2 pol", civil, st, null, StatusServico.APROVADO),
+                    servico("4101050", "TUBO RIGIDO SOLDAVEL 25MM", "Tubo PVC rígido soldável, bitola 25 mm", civil, m, null, StatusServico.APROVADO),
+                    servico("4101051", "TUBO RIGIDO SOLDAVEL 50MM", "Tubo PVC rígido soldável, bitola 50 mm", civil, m, null, StatusServico.APROVADO),
+                    servico("4101060", "COFFEE BREAK EVENTO", "Item avulso de Facilities, sem padrão de mão de obra", facilities, sv, null, StatusServico.APROVADO),
+
+                    // --- fluxo de aprovação ---
+                    servico("4101070", "ELETRICISTA INDUSTRIAL", "Aguardando aprovação do time de dados", eletromecanica, h, null, StatusServico.PENDENTE),
+                    servico("4101080", "AJUDANTE GERAL", "Rejeitado: genérico, usar AJUDANTE", civil, h, null, StatusServico.REJEITADO)
+            ));
+        }
+
+        // 5) Vínculos fornecedor x serviço (um serviço no catálogo, vários fornecedores)
+        if (fornecedorServicoRepository.count() == 0) {
+            vincular("F001", "4096348", "4101040");
+            vincular("F002", "4096348", "4101040", "4050505");
+            vincular("F003", "4101040", "4101050", "4101051");
+            vincular("F004", "4101040", "4101010", "4096350");
+            vincular("F005", "4050505", "4101030", "4096350");
+            // F006 fica sem vínculos de propósito
+        }
     }
 
-    // [NOVO] auxiliares do seed
+    // ----------------------------------------------------------------- auxiliares do seed
+
     private Categoria buscarCategoria(String trechoDoNome) {
         return categoriaRepository.findByCategoriaNomeContaining(trechoDoNome).stream().findFirst().orElse(null);
     }
 
-    private Servico servico(String codigo, String nome, Categoria categoria) {
+    private UnidadeMedida medida(String codigo) {
+        return medidaRepository.findAll().stream().filter(u -> codigo.equals(u.getCodigo())).findFirst().orElse(null);
+    }
+
+    private UnidadeCusto custo(String maoDeObra) {
+        return custoRepository.findAll().stream().filter(u -> maoDeObra.equals(u.getMaoDeObra())).findFirst().orElse(null);
+    }
+
+    private Fornecedor fornecedor(String codigo, String nome) {
+        Fornecedor f = new Fornecedor(codigo);
+        f.setNomeFornecedor(nome);
+        return f;
+    }
+
+    private Servico servico(String codigo, String nome, String descricao, Categoria categoria,
+                            UnidadeMedida medida, UnidadeCusto custo, StatusServico status) {
         Servico s = new Servico(codigo, nome);
+        s.setDescricaoServico(descricao);
         s.setCategoria(categoria);
+        s.setUnidadeMedida(medida);
+        s.setUnidadeCusto(custo);
+        s.setStatus(status);
         return s;
+    }
+
+    private void vincular(String codigoFornecedor, String... codigosServico) {
+        Fornecedor f = fornecedorRepository.findByCodigoFornecedor(codigoFornecedor).getFirst();
+        for (String codigo : codigosServico) {
+            servicoRepository.findById(codigo)
+                    .ifPresent(s -> fornecedorServicoRepository.save(new FornecedorServico(f, s)));
+        }
     }
 }

@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface FornecedorRepository extends JpaRepository<Fornecedor, Long> {
     List<Fornecedor> findByCodigoFornecedor(String codigoFornecedor);
+
 }
