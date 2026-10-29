@@ -306,7 +306,11 @@ textarea.campo { resize: vertical; font-family: inherit; }
 
 .login-logo {
     display: block;
+    text-align: center;
     margin: 0 0 20px;
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: 3px;
     color: var(--azul-escuro);
 }
 
