@@ -13,8 +13,8 @@
 <!-- FRAGMENTO 2: barra do topo. [ALTERADO] agora recebe qual item do menu fica marcado -->
 <header class="topo" th:fragment="topo(ativa)">
     <div class="container">
-        <a class="marca" th:href="@{/servicos}">Gerdau <span>Catálogo de Serviços</span></a>
-        <nav class="menu">
+        <a class="marca">Gerdau <span>Catálogo de Serviços</span></a>
+        <nav class="menu" th:unless="${esconderMenu}">
             <a th:classappend="${ativa == 'consulta'} ? 'ativo'" th:href="@{/servicos}">Consulta</a>
             <a th:classappend="${ativa == 'catalogo'} ? 'ativo'" th:href="@{/catalogo}">Catálogo</a>
             <a th:classappend="${ativa == 'vinculos'} ? 'ativo'" th:href="@{/vinculos}">Fornecedores</a>

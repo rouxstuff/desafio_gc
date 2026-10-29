@@ -6,7 +6,7 @@
 <header th:replace="~{fragments/layout :: topo('Login')}"></header>
 <main class="login-pagina">
     <div class="login-cartao">
-        <span class="login-logo">GERDAU</span>  <!-- <img src="img/gerdau-logo.svg" alt="Gerdau"> -->
+        <span class="login-logo"><img src="img/gerdau-logo.svg" alt="Gerdau" ></span>
         <h1>Entrar no sistema</h1>
         <p class="login-sub">Use seu usuário e senha para acessar o catálogo.</p>
 
@@ -30,7 +30,9 @@
 
         <p class="login-ajuda">Problemas para acessar? Fale com o administrador do sistema.</p>
     </div>
+
 </main>
+<script th:src="@{/js/login.js}"></script>
 </body>
 
 

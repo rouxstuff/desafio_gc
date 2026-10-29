@@ -53,6 +53,11 @@ body {
     font-weight: 700;
     letter-spacing: .5px;
 }
+a.marca {
+    pointer-events: none;
+    cursor: default;
+}
+
 .marca span { color: var(--amarelo); font-weight: 400; }
 .menu a {
     color: var(--branco);
