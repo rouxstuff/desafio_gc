@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Fornecedores e serviços')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('vinculos')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Fornecedores e serviços', 'Um mesmo serviço do catálogo pode ser usado por vários fornecedores, sem criar duplicatas. Só serviços aprovados podem ser vinculados.')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
+            <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
+
+            <h2>Novo vínculo</h2>
+            <form th:action="@{/vinculos}" method="post">
+                <div class="duas-colunas">
+                    <div>
+                        <label class="rotulo" for="fornecedorId">Fornecedor</label>
+                        <select class="campo" id="fornecedorId" name="fornecedorId">
+                            <option value="">Selecione…</option>
+                            <option th:each="f : ${fornecedores}" th:value="${f.id}" th:text="${f.rotulo}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="rotulo" for="codigoServico">Serviço <small>(só aprovados)</small></label>
+                        <select class="campo" id="codigoServico" name="codigoServico">
+                            <option value="">Selecione…</option>
+                            <option th:each="s : ${servicosVinculaveis}" th:value="${s.codigoServico}"
+                                    th:text="${s.codigoServico + ' - ' + s.nomeServico}"></option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="acao sec" style="max-width:220px">Vincular</button>
+            </form>
+
+            <h2 style="margin-top:32px">Vínculos atuais</h2>
+            <table>
+                <thead><tr><th>Fornecedor</th><th>Serviços vinculados</th></tr></thead>
+                <tbody>
+                <tr th:each="f : ${fornecedores}">
+                    <td th:text="${f.rotulo}">Fornecedor 1</td>
+                    <td>
+                        <span class="vazio" th:if="${f.servicos.isEmpty()}">Nenhum serviço vinculado.</span>
+                        <ul class="resumo-ad" th:unless="${f.servicos.isEmpty()}">
+                            <li th:each="nome : ${f.servicos}" th:text="${nome}"></li>
+                        </ul>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>
