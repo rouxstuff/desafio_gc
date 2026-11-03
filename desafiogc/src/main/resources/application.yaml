@@ -1,8 +1,4 @@
 spring:
-  security:
-    user:
-      name: user
-      password: 1234
   application:
     name: desafiogc
   datasource:
@@ -18,3 +14,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+app:
+  # true = cria fornecedores, serviços e vínculos FICTÍCIOS de demonstração (só em banco vazio)
+  seed-demo: ${APP_SEED_DEMO:false}

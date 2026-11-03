@@ -24,6 +24,11 @@ public class FornecedorServicoService {
         return fornecedorServicoRepository.findAll();
     }
 
+    /** [PERFORMANCE] Fornecedores de um serviço, em uma query. */
+    public List<gerdauGrupo16.desafiogc.model.entity.Fornecedor> buscarFornecedoresDoServico(String codigoServico){
+        return fornecedorServicoRepository.listarFornecedoresDoServico(codigoServico);
+    }
+
     public List<FornecedorServico> buscarVinculosServico(String codigoServico){
         return fornecedorServicoRepository.findByServico_CodigoServico(codigoServico);
     }

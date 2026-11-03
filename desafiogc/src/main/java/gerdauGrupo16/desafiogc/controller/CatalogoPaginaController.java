@@ -8,6 +8,7 @@ import gerdauGrupo16.desafiogc.service.FornecedorServicoService;
 import gerdauGrupo16.desafiogc.service.ServicoService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,13 +35,17 @@ public class CatalogoPaginaController {
     private final FornecedorService fornecedorService;
     private final FornecedorServicoService fornecedorServicoService;
 
+    private static final int TAMANHO_PAGINA = 50;
+
     @GetMapping("/catalogo")
-    public String catalogo(@RequestParam(value = "q", required = false) String q, Model model) {
-        boolean semFiltro = q == null || q.isBlank();
-        List<Servico> servicos = semFiltro ? servicoService.listarTodos() : servicoService.buscarPorNome(q);
-        model.addAttribute("servicos", servicos.stream()
-                .sorted(Comparator.comparing(Servico::getNomeServico)).toList());
-        model.addAttribute("q", semFiltro ? "" : q);
+    public String catalogo(@RequestParam(value = "q", required = false) String q,
+                           @RequestParam(value = "pagina", defaultValue = "0") int pagina, Model model) {
+        Page<Servico> resultado = servicoService.listarPagina(q, pagina, TAMANHO_PAGINA);
+        model.addAttribute("servicos", resultado.getContent());
+        model.addAttribute("q", q == null || q.isBlank() ? "" : q);
+        model.addAttribute("paginaAtual", resultado.getNumber());
+        model.addAttribute("totalPaginas", resultado.getTotalPages());
+        model.addAttribute("total", resultado.getTotalElements());
         return "servicos/catalogo";
     }
 
@@ -48,14 +53,12 @@ public class CatalogoPaginaController {
     public String vinculos(@RequestParam(value = "servicoFiltro", required = false) String servicoFiltro,
                            Model model) {
         model.addAttribute("fornecedores", montarFornecedores());
-        model.addAttribute("servicosVinculaveis", servicoService.listarTodos().stream()
-                .filter(s -> s.getStatus() == StatusServico.APROVADO)
-                .sorted(Comparator.comparing(Servico::getNomeServico)).toList());
+        model.addAttribute("servicosVinculaveis", servicoService.listarOpcoesPorStatus(StatusServico.APROVADO));
 
         // novo: só busca se um serviço foi escolhido
         if (servicoFiltro != null && !servicoFiltro.isBlank()) {
-            List<String> vinculados = fornecedorServicoService.buscarVinculosServico(servicoFiltro).stream()
-                    .map(v -> rotulo(v.getFornecedor()))   // reaproveita o seu método rotulo()
+            List<String> vinculados = fornecedorServicoService.buscarFornecedoresDoServico(servicoFiltro).stream()
+                    .map(this::rotulo)   // reaproveita o seu método rotulo()
                     .toList();
             model.addAttribute("fornecedoresVinculados", vinculados);
         }
@@ -85,12 +88,8 @@ public class CatalogoPaginaController {
     private List<LinhaFornecedor> montarFornecedores() {
         return fornecedorService.buscarTodos().stream()
                 .sorted(Comparator.comparing(Fornecedor::getId))
-                .map(f -> new LinhaFornecedor(
-                        f.getId(),
-                        rotulo(f),
-                        fornecedorService.listarServicosDoFornecedor(f.getId()).stream()
-                                .map(s -> s.getCodigoServico() + " - " + s.getNomeServico())
-                                .toList()))
+                // [PERFORMANCE] antes: 1 consulta por fornecedor (e 1 por vínculo) só para montar uma lista que a tela não usa
+                .map(f -> new LinhaFornecedor(f.getId(), rotulo(f)))
                 .toList();
     }
 
@@ -109,6 +108,5 @@ public class CatalogoPaginaController {
     public static class LinhaFornecedor {
         private final Long id;
         private final String rotulo;
-        private final List<String> servicos;
     }
 }

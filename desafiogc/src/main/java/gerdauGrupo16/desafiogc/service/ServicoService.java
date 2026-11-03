@@ -6,6 +6,7 @@ import gerdauGrupo16.desafiogc.model.entity.Categoria;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
 import gerdauGrupo16.desafiogc.repository.CategoriaRepository;
+import gerdauGrupo16.desafiogc.repository.ServicoOpcaoView;
 import gerdauGrupo16.desafiogc.repository.ServicoRepository;
 import gerdauGrupo16.desafiogc.repository.UnidadeCustoRepository;
 import gerdauGrupo16.desafiogc.repository.UnidadeMedidaRepository;
@@ -14,6 +15,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -29,27 +35,40 @@ public class ServicoService {
     public static final double LIMITE_BLOQUEIO = 0.90;   // >= 90%: duplicado, bloqueia (409)
     public static final double LIMITE_SUGESTAO = 0.60;   // >= 60%: parecido, sugere
     private static final int MAX_SUGESTOES = 5;
+    private static final int MAX_CANDIDATOS = 50;
 
     private final ServicoRepository repository;
     private final CategoriaRepository categoriaRepository;
     private final UnidadeMedidaRepository unidadeMedidaRepository;
     private final UnidadeCustoRepository unidadeCustoRepository;
     private final ReguaAderencia regua;
+    private final IndiceServicos indice;
 
     public ServicoService(ServicoRepository repository,
                           CategoriaRepository categoriaRepository,
                           UnidadeMedidaRepository unidadeMedidaRepository,
                           UnidadeCustoRepository unidadeCustoRepository,
-                          ReguaAderencia regua) {
+                          ReguaAderencia regua,
+                          IndiceServicos indice) {
         this.repository = repository;
         this.categoriaRepository = categoriaRepository;
         this.unidadeMedidaRepository = unidadeMedidaRepository;
         this.unidadeCustoRepository = unidadeCustoRepository;
         this.regua = regua;
+        this.indice = indice;
     }
 
     public List<Servico> listarTodos() {
         return repository.findAll();
+    }
+
+    /** Catálogo paginado (por nome OU código). Tamanho máximo de página: 500. */
+    @Transactional(readOnly = true)
+    public Page<Servico> listarPagina(String q, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(Math.max(pagina, 0), Math.min(Math.max(tamanho, 1), 500), Sort.by("nomeServico"));
+        if (q == null || q.isBlank()) return repository.findAll(pageable);
+        String termo = padronizar(q);
+        return repository.findByNomeServicoContainingOrCodigoServicoContaining(termo, termo, pageable);
     }
 
     public List<Servico> buscarPorNome(String nome) {
@@ -79,77 +98,48 @@ public class ServicoService {
         return repository.findById(codigo.trim());
     }
 
+    /** Candidatos da tela de consulta: nome contém o digitado (ou vice-versa), também comparando as formas
+     *  normalizadas (assim "H EXTRA" acha "HORA EXTRA"). Usa o índice em memória e devolve no máximo 50. */
     public List<Servico> buscarCandidatos(String digitado) {
-        String d = padronizar(digitado);
-        List<Servico> candidatos = new ArrayList<>();
-        if (d.isEmpty()) return candidatos;
+        String dPad = padronizar(digitado);
+        if (dPad.isEmpty()) return new ArrayList<>();
+        String dNorm = regua.perfil(digitado).normalizado();
 
-        // depois esse metodo sera substituido pela busca por similaridade
-        for (Servico s : repository.findAll()) {
-            String nome = padronizar(s.getNomeServico());
-            if (nome.contains(d) || d.contains(nome)) {
-                candidatos.add(s);
-            }
-        }
-        return candidatos;
+        List<String> codigos = indice.entradas().stream()
+                .filter(e -> e.nomePadrao().contains(dPad) || dPad.contains(e.nomePadrao())
+                        || (!dNorm.isEmpty() && !e.perfil().normalizado().isEmpty()
+                            && (e.perfil().normalizado().contains(dNorm) || dNorm.contains(e.perfil().normalizado()))))
+                .sorted(Comparator.comparing(IndiceServicos.Entrada::nome))
+                .limit(MAX_CANDIDATOS)
+                .map(IndiceServicos.Entrada::codigo)
+                .toList();
+        List<Servico> achados = new ArrayList<>(repository.findAllById(codigos));
+        achados.sort(Comparator.comparing(Servico::getNomeServico));
+        return achados;
     }
 
     // ----------------------------------------------------------------- [NOVO, do Kaio] régua de aderência
 
-    /** Serviços parecidos com o nome digitado, com a nota da régua (0 a 100%).
+    /** Serviços parecidos com o nome digitado, com a nota da régua (0 a 100%), usando o índice em memória.
      *  categoriaId = null compara com todas as categorias (usado na tela de consulta). */
-    @Transactional(readOnly = true)
     public List<SugestaoDTO> buscarSugestoes(Long categoriaId, String nome) {
-        String nomePadrao = padronizar(nome);
-        List<StatusServico> validos = List.of(StatusServico.APROVADO, StatusServico.PENDENTE);
-        List<Servico> base = categoriaId == null
-                ? repository.findByStatusIn(validos)
-                : repository.findByCategoria_IdAndStatusIn(categoriaId, validos);
-        return base.stream()
-                .map(s -> SugestaoDTO.de(s.getCodigoServico(), s.getNomeServico(),
-                        regua.calcular(nomePadrao, s.getNomeServico())))
-                .filter(s -> s.aderenciaPercentual() >= LIMITE_SUGESTAO * 100)
-                .sorted(Comparator.comparingDouble(SugestaoDTO::aderenciaPercentual).reversed())
-                .limit(MAX_SUGESTOES)
-                .toList();
+        return indice.sugestoes(categoriaId, nome, MAX_SUGESTOES, LIMITE_SUGESTAO);
     }
 
-    /** [ALTERADO] Antes: só "mesmo começo de palavra" (da Fernanda). Agora: primeiro a régua do Kaio
-     *  (com porcentagem) e, para completar, o critério antigo, que ainda pega erro de digitação
-     *  (ELETRICSTA acha ELETRICISTA), que a régua simples não pega. */
-    @Transactional(readOnly = true)
+    /** Sugestões da tela "não encontrado" e do cadastro (todas as categorias). */
     public List<SugestaoDTO> similares(String nome) {
-        List<SugestaoDTO> resultado = new ArrayList<>(buscarSugestoes(null, nome));
-        List<Servico> todos = repository.findAll();
-
-        for (String palavra : padronizar(nome).split(" ")) {
-            if (palavra.length() <= 3) continue;
-            String comeco = palavra.substring(0, 4);
-            for (Servico s : todos) {
-                boolean jaTem = resultado.stream().anyMatch(r -> r.codigoServico().equals(s.getCodigoServico()));
-                if (!jaTem && padronizar(s.getNomeServico()).contains(comeco)) {
-                    resultado.add(SugestaoDTO.de(s.getCodigoServico(), s.getNomeServico(),
-                            regua.calcular(nome, s.getNomeServico())));
-                }
-            }
-        }
-        return resultado.subList(0, Math.min(MAX_SUGESTOES, resultado.size()));
+        return indice.sugestoes(null, nome, MAX_SUGESTOES, LIMITE_SUGESTAO);
     }
 
-    /** Cria um serviço PENDENTE. Bloqueia (409) código repetido, nome repetido na categoria
+    /** Cria um serviço PENDENTE com código gerado pelo sistema. Bloqueia (409) nome repetido na categoria
      *  e nome com aderência >= 90% a um existente da mesma categoria. */
     @Transactional
-    public Servico criarNovo(ServicoDTO dto) {
-        String codigo = dto.codigoServico().trim();
+    public Servico criarNovo(ServicoDTO dto, String solicitante) {
         String nome = padronizar(dto.nomeServico());   // MAIÚSCULO, sem acento, espaços normalizados
 
         if (nome.length() > LIMITE_SAP) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "O nome passou de " + LIMITE_SAP + " caracteres (limite do SAP).");
-        }
-        // Precisa checar aqui: o save() faz "merge" e SOBRESCREVERIA o serviço existente.
-        if (repository.existsById(codigo)) {
-            throw conflito("O código " + codigo + " já existe.");
         }
 
         Categoria categoria = categoriaRepository.findById(dto.categoriaId())
@@ -166,11 +156,12 @@ public class ServicoService {
         }
 
         Servico servico = new Servico();
-        servico.setCodigoServico(codigo);
+        servico.setCodigoServico(gerarCodigo(categoria));   // só aqui, depois de validar tudo (não queima número)
         servico.setNomeServico(nome);
         servico.setDescricaoServico(dto.descricaoServico());
         servico.setCategoria(categoria);
         servico.setStatus(StatusServico.PENDENTE);   // aguarda aprovação
+        servico.setSolicitadoPor(solicitante);
         if (dto.unidadeMedidaId() != null) {
             servico.setUnidadeMedida(unidadeMedidaRepository.findById(dto.unidadeMedidaId())
                     .orElseThrow(() -> naoEncontrado("Unidade de medida não encontrada.")));
@@ -179,7 +170,66 @@ public class ServicoService {
             servico.setUnidadeCusto(unidadeCustoRepository.findById(dto.unidadeCustoId())
                     .orElseThrow(() -> naoEncontrado("Unidade de custo não encontrada.")));
         }
-        return repository.save(servico);
+        Servico salvo = repository.save(servico);
+        indice.invalidarAposCommit();   // o índice em memória precisa enxergar o serviço novo
+        return salvo;
+    }
+
+    /** Monta PREFIXO-000001 usando o contador da categoria (incremento atômico no banco). */
+    private String gerarCodigo(Categoria categoria) {
+        if (categoria.getPrefixo() == null || categoria.getPrefixo().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "A categoria " + categoria.getCategoriaNome() + " não tem prefixo configurado.");
+        }
+        // [PREFIXO] pula números que já existem (ex.: códigos importados), para nunca gerar um código repetido
+        for (int tentativa = 0; tentativa < 1000; tentativa++) {
+            categoriaRepository.incrementarUltimoNumero(categoria.getId());
+            long numero = categoriaRepository.buscarUltimoNumero(categoria.getId());
+            String codigo = String.format("%s-%06d", categoria.getPrefixo(), numero);
+            if (!repository.existsById(codigo)) return codigo;
+        }
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Não consegui gerar um código livre para a categoria " + categoria.getCategoriaNome() + ".");
+    }
+
+    // ----------------------------------------------------------------- governança: aprovar / reprovar
+
+    public List<Servico> listarPorStatus(StatusServico status) {
+        return repository.findByStatusOrderByNomeServico(status);
+    }
+
+    /** [PERFORMANCE] Só código e nome (1 query leve). Usado nas listas suspensas da tela de vínculos. */
+    public List<ServicoOpcaoView> listarOpcoesPorStatus(StatusServico status) {
+        return repository.listarOpcoes(status);
+    }
+
+    @Transactional
+    public Servico aprovar(String codigo) {
+        Servico s = buscarPendente(codigo);
+        s.setStatus(StatusServico.APROVADO);
+        s.setMotivoRejeicao(null);
+        indice.invalidarAposCommit();
+        return s;   // o JPA grava sozinho no commit (dirty checking)
+    }
+
+    @Transactional
+    public Servico reprovar(String codigo, String motivo) {
+        if (motivo == null || motivo.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o motivo da reprovação.");
+        }
+        Servico s = buscarPendente(codigo);
+        s.setStatus(StatusServico.REJEITADO);
+        s.setMotivoRejeicao(motivo.trim());
+        indice.invalidarAposCommit();
+        return s;
+    }
+
+    private Servico buscarPendente(String codigo) {
+        Servico s = repository.findById(codigo).orElseThrow(() -> naoEncontrado("Serviço não encontrado."));
+        if (s.getStatus() != StatusServico.PENDENTE) {
+            throw conflito("Este pedido já foi decidido (" + s.getStatus() + ").");
+        }
+        return s;
     }
 
     // ----------------------------------------------------------------- da Fernanda (sem mudanças)

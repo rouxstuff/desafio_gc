@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -124,21 +125,19 @@ public class ConsultaPaginaController {
 
     @GetMapping("/servicos/novo")
     public String novo(@RequestParam(required = false) String nome, Model model) {
-        return paginaCadastro(service.padronizar(nome), null, null, null, null, null, null, model);
+        return paginaCadastro(service.padronizar(nome), null, null, null, null, null, model);
     }
 
-    /** [ALTERADO] Antes só validava o nome. Agora cadastra de verdade (status PENDENTE) usando as
-     *  mesmas regras da API: código/nome/categoria obrigatórios e bloqueio de duplicata pela régua. */
+    /** Cadastra de verdade (status PENDENTE). O código é gerado pelo sistema (ex.: FAC-000001). */
     @PostMapping("/servicos/novo")
     public String solicitar(@RequestParam String nomeServico,
                             @RequestParam(required = false) Long categoriaId,
-                            @RequestParam(required = false) String codigoServico,
                             @RequestParam(required = false) String descricaoServico,
                             @RequestParam(required = false) Long unidadeMedidaId,
                             @RequestParam(required = false) Long unidadeCustoId,
+                            Principal principal,
                             Model model) {
         String nome = service.padronizar(nomeServico);
-        String codigo = codigoServico == null ? "" : codigoServico.trim();
 
         String erro = null;
         if (nome.isEmpty()) {
@@ -147,26 +146,23 @@ public class ConsultaPaginaController {
             erro = "O nome passou de " + ServicoService.LIMITE_SAP + " caracteres (limite do SAP).";
         } else if (categoriaId == null) {
             erro = "Escolha a categoria.";
-        } else if (codigo.isEmpty()) {
-            erro = "Informe o código do serviço.";
-        } else if (codigo.length() > 20) {
-            erro = "O código deve ter no máximo 20 caracteres.";
         } else if (descricaoServico != null && descricaoServico.length() > 100) {
             erro = "A descrição deve ter no máximo 100 caracteres.";
         }
         if (erro != null) {
-            return paginaCadastro(nome, erro, categoriaId, codigo, descricaoServico, unidadeMedidaId, unidadeCustoId, model);
+            return paginaCadastro(nome, erro, categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, model);
         }
 
         try {
             String descricao = (descricaoServico == null || descricaoServico.isBlank()) ? null : descricaoServico.trim();
-            Servico criado = service.criarNovo(new ServicoDTO(codigo, nome, descricao, categoriaId, unidadeMedidaId, unidadeCustoId));
+            Servico criado = service.criarNovo(
+                    new ServicoDTO(nome, descricao, categoriaId, unidadeMedidaId, unidadeCustoId),
+                    principal.getName());
 
             model.addAttribute("nomeServico", "");
             model.addAttribute("titulo", "Serviço solicitado");
             model.addAttribute("servicoNome", criado.getCodigoServico() + " - " + criado.getNomeServico());
-            model.addAttribute("mensagem", "Cadastrado com status PENDENTE. Só depois de aprovado ele poderá ser vinculado a fornecedores.");
-            // [NOVO] mostra na confirmação a unidade de medida e a de custo (se escolhidas)
+            model.addAttribute("mensagem", "Cadastrado com status PENDENTE. Só depois de aprovado pelo administrador ele poderá ser vinculado a fornecedores.");
             model.addAttribute("medida", criado.getUnidadeMedida() == null ? null
                     : criado.getUnidadeMedida().getCodigo() + " - " + criado.getUnidadeMedida().getDescricao());
             model.addAttribute("itens", criado.getUnidadeCusto() == null ? List.of()
@@ -174,11 +170,11 @@ public class ConsultaPaginaController {
             return "servicos/concluido";
         } catch (ResponseStatusException e) {
             // 409 duplicado / 404 não encontrado: mostra a mensagem no próprio formulário
-            return paginaCadastro(nome, e.getReason(), categoriaId, codigo, descricaoServico, unidadeMedidaId, unidadeCustoId, model);
+            return paginaCadastro(nome, e.getReason(), categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, model);
         }
     }
 
-    private String paginaCadastro(String nome, String erro, Long categoriaId, String codigo,
+    private String paginaCadastro(String nome, String erro, Long categoriaId,
                                   String descricao, Long unidadeMedidaId, Long unidadeCustoId, Model model) {
         int n = nome.length();
         model.addAttribute("nomeNovo", nome);
@@ -192,7 +188,6 @@ public class ConsultaPaginaController {
         model.addAttribute("categorias", categoriaService.listarTodasCategorias());
         model.addAttribute("unidadesMedida", unidadeMedidaService.listarTodasUnidadesMedidas());
         model.addAttribute("categoriaId", categoriaId);
-        model.addAttribute("codigoServico", codigo == null ? "" : codigo);
         model.addAttribute("descricaoServico", descricao == null ? "" : descricao);
         model.addAttribute("unidadeMedidaId", unidadeMedidaId);
         // [NOVO] unidade de custo (opcional), igual à de medida

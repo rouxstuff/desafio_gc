@@ -4,12 +4,16 @@ import gerdauGrupo16.desafiogc.model.entity.Categoria;
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.FornecedorServico;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
+import gerdauGrupo16.desafiogc.model.entity.Usuario;
+import gerdauGrupo16.desafiogc.model.enumeration.Roles;
 import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeMedida;
 import gerdauGrupo16.desafiogc.repository.*;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -24,19 +28,36 @@ public class CargaInicialUnidades implements CommandLineRunner {
     private final FornecedorRepository fornecedorRepository;
     // [NOVO] para o exemplo de vínculo fornecedor <-> serviço
     private final FornecedorServicoRepository fornecedorServicoRepository;
+    // usuários de teste (login/perfis)
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final String senhaAdmin;
+    private final String senhaComprador;
+    // false (padrão): NÃO cria fornecedores/serviços/vínculos fictícios, para o catálogo real ser importado por CSV
+    private final boolean seedDemo;
 
     public CargaInicialUnidades(UnidadeCustoRepository custoRepository,
                                 UnidadeMedidaRepository medidaRepository,
                                 ServicoRepository servicoRepository,
                                 CategoriaRepository categoriaRepository,
                                 FornecedorRepository fornecedorRepository,
-                                FornecedorServicoRepository fornecedorServicoRepository) {
+                                FornecedorServicoRepository fornecedorServicoRepository,
+                                UsuarioRepository usuarioRepository,
+                                PasswordEncoder passwordEncoder,
+                                @Value("${ADMIN_SENHA:trocar-admin}") String senhaAdmin,
+                                @Value("${COMPRADOR_SENHA:trocar-comprador}") String senhaComprador,
+                                @Value("${app.seed-demo:false}") boolean seedDemo) {
         this.custoRepository = custoRepository;
         this.medidaRepository = medidaRepository;
         this.servicoRepository = servicoRepository;
         this.categoriaRepository = categoriaRepository;
         this.fornecedorRepository = fornecedorRepository;
         this.fornecedorServicoRepository = fornecedorServicoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.senhaAdmin = senhaAdmin;
+        this.senhaComprador = senhaComprador;
+        this.seedDemo = seedDemo;
     }
 
     @Override
@@ -85,14 +106,18 @@ public class CargaInicialUnidades implements CommandLineRunner {
         // 2) Categorias (os 3 grupos de serviço da base)
         if (categoriaRepository.count() == 0) {
             categoriaRepository.saveAll(List.of(
-                    new Categoria("Civil".toUpperCase()),
-                    new Categoria("Eletromecânica".toUpperCase()),
-                    new Categoria("Facilities".toUpperCase())
+                    new Categoria("Civil".toUpperCase(), "CIV"),
+                    new Categoria("Eletromecânica".toUpperCase(), "ELETRO"),
+                    new Categoria("Facilities".toUpperCase(), "FAC")
             ));
         }
+        // bancos antigos já têm as categorias, mas sem prefixo: preenche
+        garantirPrefixo("CIVIL", "CIV");
+        garantirPrefixo("ELETROMEC", "ELETRO");
+        garantirPrefixo("FACILITIES", "FAC");
 
         // 3) Fornecedores FICTÍCIOS (a base real é anonimizada). Todos com código e nome preenchidos.
-        if (fornecedorRepository.count() == 0) {
+        if (seedDemo && fornecedorRepository.count() == 0) {
             fornecedorRepository.saveAll(List.of(
                     fornecedor("F001", "Alfa Engenharia"),
                     fornecedor("F002", "Beta Serviços Industriais"),
@@ -104,7 +129,7 @@ public class CargaInicialUnidades implements CommandLineRunner {
         }
 
         // 4) Serviços. Nome = só a função (sem adicionais), em MAIÚSCULO e sem acento, até 40 caracteres.
-        if (servicoRepository.count() == 0) {
+        if (seedDemo && servicoRepository.count() == 0) {
             Categoria civil = buscarCategoria("CIVIL");
             Categoria eletromecanica = buscarCategoria("ELETROMEC");
             Categoria facilities = buscarCategoria("FACILITIES");
@@ -138,7 +163,7 @@ public class CargaInicialUnidades implements CommandLineRunner {
         }
 
         // 5) Vínculos fornecedor x serviço (um serviço no catálogo, vários fornecedores)
-        if (fornecedorServicoRepository.count() == 0) {
+        if (seedDemo && fornecedorServicoRepository.count() == 0) {
             vincular("F001", "4096348", "4101040");
             vincular("F002", "4096348", "4101040", "4050505");
             vincular("F003", "4101040", "4101050", "4101051");
@@ -146,6 +171,26 @@ public class CargaInicialUnidades implements CommandLineRunner {
             vincular("F005", "4050505", "4101030", "4096350");
             // F006 fica sem vínculos de propósito
         }
+
+        // 6) Usuários de teste (senha com BCrypt; as senhas vêm de variáveis de ambiente)
+        if (usuarioRepository.count() == 0) {
+            usuarioRepository.save(novoUsuario("admin", senhaAdmin, Roles.ADMIN));
+            usuarioRepository.save(novoUsuario("comprador", senhaComprador, Roles.COMPRADOR));
+        }
+    }
+
+    private Usuario novoUsuario(String login, String senhaPura, Roles role) {
+        Usuario u = new Usuario();
+        u.setLogin(login);
+        u.setSenha(passwordEncoder.encode(senhaPura));   // nunca salvar a senha pura
+        u.getRoles().add(role);
+        return u;
+    }
+
+    private void garantirPrefixo(String trechoDoNome, String prefixo) {
+        categoriaRepository.findByCategoriaNomeContaining(trechoDoNome).stream().findFirst()
+                .filter(c -> c.getPrefixo() == null)
+                .ifPresent(c -> { c.setPrefixo(prefixo); categoriaRepository.save(c); });
     }
 
     // ----------------------------------------------------------------- auxiliares do seed

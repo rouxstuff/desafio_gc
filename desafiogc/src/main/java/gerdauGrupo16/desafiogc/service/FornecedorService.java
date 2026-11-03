@@ -62,9 +62,7 @@ public class FornecedorService {
         if (!fornecedorRepository.existsById(fornecedorId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Fornecedor não encontrado.");
         }
-        return fornecedorServicoRepository.findByFornecedor_Id(fornecedorId).stream()
-                .map(FornecedorServico::getServico)
-                .toList();
+        return fornecedorServicoRepository.listarServicosDoFornecedor(fornecedorId);
     }
 
 }

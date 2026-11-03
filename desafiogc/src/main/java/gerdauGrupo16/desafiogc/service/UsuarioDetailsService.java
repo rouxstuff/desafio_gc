@@ -26,8 +26,8 @@ public class UsuarioDetailsService implements UserDetailsService {
                 .map(Roles::name)
                 .toArray(String[]::new);
 
-        return User.withUsername(usuario.getUsuario_nome())
-                .password(usuario.getUsuario_senha())
+        return User.withUsername(usuario.getLogin())
+                .password(usuario.getSenha())
                 .roles(roles)
                 .build();
     }

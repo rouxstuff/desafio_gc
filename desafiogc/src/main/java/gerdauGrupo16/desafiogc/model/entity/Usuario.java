@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.rmi.server.UID;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,11 +19,11 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String usuario_nome;
+    @Column(name = "usuario_nome", nullable = false, unique = true)
+    private String login;
 
-    @Column(nullable = false)
-    private String usuario_senha;
+    @Column(name = "usuario_senha", nullable = false)
+    private String senha;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id"))

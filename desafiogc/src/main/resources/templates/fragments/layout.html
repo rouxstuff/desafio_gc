@@ -14,10 +14,19 @@
 <header class="topo" th:fragment="topo(ativa)">
     <div class="container">
         <a class="marca" th:href="@{/servicos}">Gerdau <span>Catálogo de Serviços</span></a>
-        <nav class="menu">
+        <nav class="menu" th:if="${usuarioLogado != null}">
             <a th:classappend="${ativa == 'consulta'} ? 'ativo'" th:href="@{/servicos}">Consulta</a>
             <a th:classappend="${ativa == 'catalogo'} ? 'ativo'" th:href="@{/catalogo}">Catálogo</a>
-            <a th:classappend="${ativa == 'vinculos'} ? 'ativo'" th:href="@{/vinculos}">Fornecedores</a>
+            <!-- só o administrador vê Fornecedores e Aprovações -->
+            <a th:if="${ehAdmin}" th:classappend="${ativa == 'vinculos'} ? 'ativo'" th:href="@{/vinculos}">Fornecedores</a>
+            <a th:if="${ehAdmin}" th:classappend="${ativa == 'admin'} ? 'ativo'" th:href="@{/admin/solicitacoes}">Aprovações</a>
+            <a th:if="${ehAdmin}" th:classappend="${ativa == 'importacao'} ? 'ativo'" th:href="@{/admin/importacao}">Importação</a>
+            <!-- só quem solicita (comprador/fornecedor) vê o botão -->
+            <a th:unless="${ehAdmin}" class="btn-nav" th:href="@{/servicos/novo}">Solicitar serviço</a>
+            <!-- logout precisa ser POST (com CSRF ligado, link GET não encerra a sessão) -->
+            <form class="form-sair" th:action="@{/logout}" method="post">
+                <button type="submit" class="btn-sair">Sair</button>
+            </form>
         </nav>
     </div>
 </header>

@@ -28,7 +28,7 @@ public class Servico {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatusServico status = StatusServico.APROVADO;
+    private StatusServico status = StatusServico.PENDENTE;
 
     @ManyToOne
     @JoinColumn(name = "unidade_custo_id", nullable = true)
@@ -42,6 +42,12 @@ public class Servico {
     @ManyToOne
     @JoinColumn(name = "categoria_id", nullable = true)
     private Categoria categoria;
+
+    @Column(name = "solicitado_por")
+    private String solicitadoPor;
+
+    @Column(name = "motivo_rejeicao", length = 200)
+    private String motivoRejeicao;
 
     public Servico(String codigoServico, String nomeServico) {
         this.codigoServico = codigoServico;

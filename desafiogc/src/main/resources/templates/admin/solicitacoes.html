@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Aprovações')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('admin')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Pedidos pendentes', 'Aprove ou reprove os serviços solicitados pelos usuários.')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
+            <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
+
+            <p class="dica" th:if="${pendentes.isEmpty()}">Nenhum pedido pendente.</p>
+
+            <div class="tabela-rolagem"><table th:unless="${pendentes.isEmpty()}">
+                <thead>
+                <tr><th>Código</th><th>Serviço</th><th>Categoria</th><th>Solicitante</th><th>Ações</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${pendentes}">
+                    <td class="codigo" th:text="${s.codigoServico}">FAC-000001</td>
+                    <td th:text="${s.nomeServico}">AJUDANTE</td>
+                    <td th:text="${s.categoria != null ? s.categoria.categoriaNome : '—'}">CIVIL</td>
+                    <td th:text="${s.solicitadoPor}">comprador</td>
+                    <td class="acoes-linha">
+                        <form th:action="@{/admin/solicitacoes/{c}/aprovar(c=${s.codigoServico})}" method="post">
+                            <button class="acao" type="submit">Aprovar</button>
+                        </form>
+                        <form th:action="@{/admin/solicitacoes/{c}/reprovar(c=${s.codigoServico})}" method="post">
+                            <input class="campo" type="text" name="motivo" maxlength="200" placeholder="Motivo da reprovação" required>
+                            <button class="acao sec" type="submit">Reprovar</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table></div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>
