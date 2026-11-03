@@ -10,6 +10,7 @@ import gerdauGrupo16.desafiogc.repository.ServicoOpcaoView;
 import gerdauGrupo16.desafiogc.repository.ServicoRepository;
 import gerdauGrupo16.desafiogc.repository.UnidadeCustoRepository;
 import gerdauGrupo16.desafiogc.repository.UnidadeMedidaRepository;
+import gerdauGrupo16.desafiogc.service.importacao.CodigoComPrefixo;
 import gerdauGrupo16.desafiogc.service.reguaAderencia.ReguaAderencia;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -181,7 +182,14 @@ public class ServicoService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "A categoria " + categoria.getCategoriaNome() + " não tem prefixo configurado.");
         }
-        // [PREFIXO] pula números que já existem (ex.: códigos importados), para nunca gerar um código repetido
+        // [PREFIXO] continua do ÚLTIMO número registrado na categoria (inclusive os códigos importados, ex.: FAC-4048071
+        // -> próximo FAC-4048072). Se o contador da categoria estiver atrás, ele é elevado antes de incrementar.
+        List<String> codigosExistentes = indice.entradas().stream().map(IndiceServicos.Entrada::codigo).toList();
+        long maiorExistente = CodigoComPrefixo.maiorNumero(codigosExistentes, categoria.getPrefixo());
+        if (maiorExistente > 0) {
+            categoriaRepository.garantirUltimoNumero(categoria.getId(), maiorExistente);
+        }
+        // e pula números que já existem, para nunca gerar um código repetido
         for (int tentativa = 0; tentativa < 1000; tentativa++) {
             categoriaRepository.incrementarUltimoNumero(categoria.getId());
             long numero = categoriaRepository.buscarUltimoNumero(categoria.getId());

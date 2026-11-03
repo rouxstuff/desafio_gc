@@ -15,10 +15,15 @@
 
             <form th:action="@{/servicos/confirmar}" method="post">
                 <input type="hidden" name="codigo" th:value="${servico.codigoServico}">
+                <input type="hidden" name="digitado" th:value="${digitado}">
 
                 <div class="grade">
                     <div>
-                        <p class="alerta" th:if="${!textoExtra.isBlank()}">
+                        <p class="alerta" th:if="${modoContrato and !textoExtra.isBlank()}">
+                            Você digitou <b>"<span th:text="${textoExtra}"></span>"</b> junto com o serviço.
+                            Isso não faz parte do nome. Se for importante para o contrato, anote na observação.
+                        </p>
+                        <p class="alerta" th:if="${!modoContrato and !textoExtra.isBlank()}">
                             Você digitou <b>"<span th:text="${textoExtra}"></span>"</b> junto com o serviço.
                             Isso não faz parte do nome: marque nos adicionais abaixo. O serviço continua o mesmo.
                         </p>
@@ -29,34 +34,59 @@
                             <a th:href="@{/servicos}" style="color:var(--azul);font-size:.85rem;font-weight:600;text-decoration:none">Trocar</a>
                         </div>
 
-                        <!-- [NOVO] unidade de medida do contrato (opcional) -->
-                        <label class="rotulo" for="unidadeMedidaId">Unidade de medida (opcional)</label>
-                        <select class="campo" id="unidadeMedidaId" name="unidadeMedidaId" style="margin-bottom:20px">
-                            <option value="">Selecione…</option>
-                            <option th:each="u : ${unidadesMedida}" th:value="${u.id}"
-                                    th:text="${u.codigo + ' - ' + u.descricao}"
-                                    th:selected="${servico.unidadeMedida != null and servico.unidadeMedida.id == u.id}"></option>
-                        </select>
-
-                        <span class="rotulo">Adicionais deste contrato (opcional)</span>
-                        <div class="dd">
-                            <button type="button" class="dd-botao" id="ddBotao" aria-expanded="false" aria-haspopup="true">
-                                <span id="ddTexto">Selecione os adicionais</span>
-                            </button>
-                            <div class="dd-painel" id="ddPainel">
-                                <th:block th:each="grupo : ${grupos}">
-                                    <div class="dd-grupo" th:text="${grupo.key}">Jornada</div>
-                                    <label class="dd-item" th:each="a : ${grupo.value}">
-                                        <input type="checkbox" name="adicionais" th:value="${a.id}">
-                                        <span>
-                                            <strong th:text="${a.maoDeObra}">Hora extra</strong>
-                                            <small th:text="${a.descricao}">Descrição</small>
-                                        </span>
-                                    </label>
-                                </th:block>
+                        <!-- Serviço APROVADO com unidade de medida: só quantidade e observação -->
+                        <th:block th:if="${modoContrato}">
+                            <span class="rotulo">Unidade de medida</span>
+                            <div class="servico-escolhido">
+                                <span th:text="${servico.unidadeMedida.codigo + ' - ' + servico.unidadeMedida.descricao}">ST - Unidade (peça)</span>
                             </div>
-                        </div>
-                        <div class="chips" id="chips"><span class="vazio">Nenhum adicional marcado.</span></div>
+                        </th:block>
+
+                        <!-- Demais casos: escolhe unidade (opcional) e adicionais, como antes -->
+                        <th:block th:unless="${modoContrato}">
+                            <!-- [NOVO] unidade de medida do contrato (opcional) -->
+                            <label class="rotulo" for="unidadeMedidaId">Unidade de medida (opcional)</label>
+                            <select class="campo" id="unidadeMedidaId" name="unidadeMedidaId" style="margin-bottom:20px">
+                                <option value="">Selecione…</option>
+                                <option th:each="u : ${unidadesMedida}" th:value="${u.id}"
+                                        th:text="${u.codigo + ' - ' + u.descricao}"
+                                        th:selected="${(unidadeMedidaEscolhida != null and unidadeMedidaEscolhida == u.id) or (unidadeMedidaEscolhida == null and servico.unidadeMedida != null and servico.unidadeMedida.id == u.id)}"></option>
+                            </select>
+
+                            <span class="rotulo">Adicionais deste contrato (opcional)</span>
+                            <div class="dd">
+                                <button type="button" class="dd-botao" id="ddBotao" aria-expanded="false" aria-haspopup="true">
+                                    <span id="ddTexto">Selecione os adicionais</span>
+                                </button>
+                                <div class="dd-painel" id="ddPainel">
+                                    <th:block th:each="grupo : ${grupos}">
+                                        <div class="dd-grupo" th:text="${grupo.key}">Jornada</div>
+                                        <label class="dd-item" th:each="a : ${grupo.value}">
+                                            <input type="checkbox" name="adicionais" th:value="${a.id}">
+                                            <span>
+                                                <strong th:text="${a.maoDeObra}">Hora extra</strong>
+                                                <small th:text="${a.descricao}">Descrição</small>
+                                            </span>
+                                        </label>
+                                    </th:block>
+                                </div>
+                            </div>
+                            <div class="chips" id="chips"><span class="vazio">Nenhum adicional marcado.</span></div>
+                        </th:block>
+
+                        <!-- Quantidade (obrigatória no modo contrato) e observação -->
+                        <label class="rotulo" for="quantidade" style="margin-top:20px">Quantidade
+                            <small th:if="${modoContrato}" th:text="'(' + ${servico.unidadeMedida.codigo + ' - ' + servico.unidadeMedida.descricao} + ')'"></small>
+                            <small th:unless="${modoContrato}">(opcional, na unidade de medida escolhida)</small>
+                        </label>
+                        <input class="campo" type="text" inputmode="decimal" id="quantidade" name="quantidade"
+                               autocomplete="off" th:value="${quantidade}" th:required="${modoContrato}"
+                               th:placeholder="${modoContrato} ? ${servico.unidadeMedida.codigo} : ''">
+                        <p class="nota" style="margin-top:8px" th:if="${modoContrato}" th:text="${dicaQuantidade}">Informe um número inteiro.</p>
+
+                        <label class="rotulo" for="observacao" style="margin-top:16px">Observação <small>(opcional)</small></label>
+                        <textarea class="campo" id="observacao" name="observacao" rows="2"
+                                  th:maxlength="${maxObservacao}" th:text="${observacao}"></textarea>
                     </div>
 
                     <aside class="resultado" aria-live="polite">
@@ -70,7 +100,9 @@
                             <span th:if="${servico.unidadeMedida != null}"> · <span th:text="${servico.unidadeMedida.codigo}">H</span></span>
                         </p>
 <ul class="resumo-ad oculto" id="resumo"></ul>
-                        <p class="nota" id="nota">Serviço encontrado no catálogo. Marque os adicionais, se algum se aplica.</p>
+                        <p class="erro" th:if="${erro != null}" th:text="${erro}"></p>
+                        <p class="nota" id="nota" th:if="${modoContrato}">Serviço aprovado. Informe a quantidade e, se precisar, uma observação.</p>
+                        <p class="nota" id="nota" th:unless="${modoContrato}">Serviço encontrado no catálogo. Marque os adicionais, se algum se aplica.</p>
                         <button type="submit" class="acao sec">Confirmar serviço</button>
                     </aside>
                 </div>
@@ -80,6 +112,6 @@
 </main>
 
 <footer th:replace="~{fragments/layout :: rodape}"></footer>
-<script th:src="@{/js/consulta.js}"></script>
+<script th:src="@{/js/consulta.js}" th:unless="${modoContrato}"></script>
 </body>
 </html>

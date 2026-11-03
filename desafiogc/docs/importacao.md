@@ -15,7 +15,7 @@ Todo serviço fica com o código **PREFIXO-CÓDIGO** (ex.: `CIV-4057137`, `ELETR
 O código que já existe (SAP) é mantido **sem alteração**: o sistema só acrescenta o prefixo da categoria na importação.
 - Pode enviar o CSV com `4057137` (o sistema vira `CIV-4057137`) ou já com `CIV-4057137` (não duplica o prefixo).
 - No CSV de **vínculos** vale o mesmo: `4057137` ou `CIV-4057137`.
-- Códigos criados pelo sistema continuam `PREFIXO-000001`, `PREFIXO-000002`... e **nunca repetem** um código que já existe.
+- Códigos criados pelo sistema **continuam do último número da categoria** (se o maior é `FAC-4048071`, o próximo é `FAC-4048072`) e **nunca repetem** um código que já existe. Categoria sem nenhum código numerado começa em `PREFIXO-000001`.
 
 ## Limpar o banco antes de reimportar (se já importou sem prefixo)
 Os códigos antigos (sem prefixo) conflitam por nome com os novos, então limpe antes:

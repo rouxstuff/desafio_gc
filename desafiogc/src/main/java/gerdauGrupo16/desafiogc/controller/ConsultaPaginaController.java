@@ -2,6 +2,9 @@ package gerdauGrupo16.desafiogc.controller;
 
 import gerdauGrupo16.desafiogc.controller.dto.ServicoDTO;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
+import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
+import gerdauGrupo16.desafiogc.model.unitys.UnidadeMedida;
+import gerdauGrupo16.desafiogc.service.QuantidadeServico;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.service.CategoriaService;
 import gerdauGrupo16.desafiogc.service.ServicoService;
@@ -77,15 +80,38 @@ public class ConsultaPaginaController {
         if (achado.isEmpty()) { // Se alguem mexer na URL com um código que nao existe, mandamos de volta para a busca
             return "redirect:/servicos";
         }
-        Servico servico = achado.get();
+        return paginaDetalhes(achado.get(), digitado, null, null, null, null, model);
+    }
 
+    /** Serviço APROVADO que já tem unidade de medida: só pede quantidade e observação (unidade e adicionais já estão definidos). */
+    private boolean modoContrato(Servico servico) {
+        return servico.getStatus() == StatusServico.APROVADO && servico.getUnidadeMedida() != null;
+    }
+
+    private String paginaDetalhes(Servico servico, String digitado, String erro, String quantidade,
+                                  String observacao, Long unidadeMedidaId, Model model) {
+        boolean contrato = modoContrato(servico);
         model.addAttribute("nomeServico", servico.getNomeServico());
         model.addAttribute("servico", servico);
+        model.addAttribute("digitado", digitado == null ? "" : digitado);
         model.addAttribute("textoExtra", service.tratarTextoExtra(digitado, servico));
         model.addAttribute("grupos", adicionaisService.listarAdicionaisAgrupados());
         // [NOVO] o contrato também escolhe a unidade de medida (vem preenchida se o serviço já tem uma)
         model.addAttribute("unidadesMedida", unidadeMedidaService.listarTodasUnidadesMedidas());
+        model.addAttribute("modoContrato", contrato);
+        model.addAttribute("dicaQuantidade", contrato ? QuantidadeServico.dica(servico.getUnidadeMedida().getCodigo()) : "");
+        model.addAttribute("erro", erro);
+        model.addAttribute("quantidade", quantidade == null ? "" : quantidade);
+        model.addAttribute("observacao", observacao == null ? "" : observacao);
+        model.addAttribute("unidadeMedidaEscolhida", unidadeMedidaId);
+        model.addAttribute("maxObservacao", QuantidadeServico.MAX_OBSERVACAO);
         return "servicos/detalhes";
+    }
+
+    private UnidadeMedida buscarUnidade(Long id) {
+        if (id == null) return null;
+        return unidadeMedidaService.listarTodasUnidadesMedidas().stream()
+                .filter(u -> id.equals(u.getId())).findFirst().orElse(null);
     }
 
     private String paginaNaoEncontrado(String nome, Model model) {
@@ -99,10 +125,29 @@ public class ConsultaPaginaController {
     public String confirmar(@RequestParam String codigo,
                             @RequestParam(name = "adicionais", required = false) List<Long> ids,
                             @RequestParam(name = "unidadeMedidaId", required = false) Long unidadeMedidaId,
+                            @RequestParam(name = "quantidade", required = false) String quantidade,
+                            @RequestParam(name = "observacao", required = false) String observacao,
+                            @RequestParam(name = "digitado", required = false) String digitado,
                             Model model) {
         Optional<Servico> achado = service.buscarPorCodigo(codigo);
         if (achado.isEmpty()) {
             return "redirect:/servicos";
+        }
+        Servico servico = achado.get();
+
+        // Serviço aprovado com unidade de medida: a unidade vem do catálogo e não há adicionais (ignora o que vier no POST).
+        boolean contrato = modoContrato(servico);
+        UnidadeMedida unidade = contrato ? servico.getUnidadeMedida() : buscarUnidade(unidadeMedidaId);
+        if (contrato) ids = null;
+
+        QuantidadeServico.Resultado qtd = QuantidadeServico.validar(quantidade, unidade == null ? null : unidade.getCodigo(), contrato);
+        String obs = observacao == null ? "" : observacao.strip();
+        String erro = qtd.erro();
+        if (erro == null && obs.length() > QuantidadeServico.MAX_OBSERVACAO) {
+            erro = "A observação deve ter no máximo " + QuantidadeServico.MAX_OBSERVACAO + " caracteres.";
+        }
+        if (erro != null) {
+            return paginaDetalhes(servico, digitado, erro, quantidade, observacao, unidadeMedidaId, model);
         }
 
         List<String> nomes = new ArrayList<>();
@@ -116,16 +161,16 @@ public class ConsultaPaginaController {
         model.addAttribute("mensagem", "O serviço já existe no catálogo.");
         model.addAttribute("itens", nomes);
         // [NOVO] unidade de medida escolhida (opcional)
-        model.addAttribute("medida", unidadeMedidaId == null ? null : unidadeMedidaService.listarTodasUnidadesMedidas().stream()
-                .filter(u -> unidadeMedidaId.equals(u.getId()))
-                .map(u -> u.getCodigo() + " - " + u.getDescricao())
-                .findFirst().orElse(null));
+        model.addAttribute("medida", unidade == null ? null : unidade.getCodigo() + " - " + unidade.getDescricao());
+        model.addAttribute("quantidade", qtd.valor() == null ? null
+                : QuantidadeServico.formatar(qtd.valor()) + " " + unidade.getCodigo());
+        model.addAttribute("observacao", obs.isEmpty() ? null : obs);
         return "servicos/concluido";
     }
 
     @GetMapping("/servicos/novo")
     public String novo(@RequestParam(required = false) String nome, Model model) {
-        return paginaCadastro(service.padronizar(nome), null, null, null, null, null, model);
+        return paginaCadastro(service.padronizar(nome), null, null, null, null, null, null, null, model);
     }
 
     /** Cadastra de verdade (status PENDENTE). O código é gerado pelo sistema (ex.: FAC-000001). */
@@ -135,6 +180,8 @@ public class ConsultaPaginaController {
                             @RequestParam(required = false) String descricaoServico,
                             @RequestParam(required = false) Long unidadeMedidaId,
                             @RequestParam(required = false) Long unidadeCustoId,
+                            @RequestParam(required = false) String quantidade,
+                            @RequestParam(required = false) String observacao,
                             Principal principal,
                             Model model) {
         String nome = service.padronizar(nomeServico);
@@ -149,8 +196,19 @@ public class ConsultaPaginaController {
         } else if (descricaoServico != null && descricaoServico.length() > 100) {
             erro = "A descrição deve ter no máximo 100 caracteres.";
         }
+        // quantidade (opcional) conforme a unidade de medida escolhida; observação opcional
+        UnidadeMedida unidadeEscolhida = buscarUnidade(unidadeMedidaId);
+        QuantidadeServico.Resultado qtd = null;
+        String obs = observacao == null ? "" : observacao.strip();
+        if (erro == null) {
+            qtd = QuantidadeServico.validar(quantidade, unidadeEscolhida == null ? null : unidadeEscolhida.getCodigo(), false);
+            erro = qtd.erro();
+        }
+        if (erro == null && obs.length() > QuantidadeServico.MAX_OBSERVACAO) {
+            erro = "A observação deve ter no máximo " + QuantidadeServico.MAX_OBSERVACAO + " caracteres.";
+        }
         if (erro != null) {
-            return paginaCadastro(nome, erro, categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, model);
+            return paginaCadastro(nome, erro, categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, quantidade, observacao, model);
         }
 
         try {
@@ -167,15 +225,19 @@ public class ConsultaPaginaController {
                     : criado.getUnidadeMedida().getCodigo() + " - " + criado.getUnidadeMedida().getDescricao());
             model.addAttribute("itens", criado.getUnidadeCusto() == null ? List.of()
                     : List.of(criado.getUnidadeCusto().getMaoDeObra()));
+            model.addAttribute("quantidade", qtd == null || qtd.valor() == null ? null
+                    : QuantidadeServico.formatar(qtd.valor()) + " " + unidadeEscolhida.getCodigo());
+            model.addAttribute("observacao", obs.isEmpty() ? null : obs);
             return "servicos/concluido";
         } catch (ResponseStatusException e) {
             // 409 duplicado / 404 não encontrado: mostra a mensagem no próprio formulário
-            return paginaCadastro(nome, e.getReason(), categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, model);
+            return paginaCadastro(nome, e.getReason(), categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, quantidade, observacao, model);
         }
     }
 
     private String paginaCadastro(String nome, String erro, Long categoriaId,
-                                  String descricao, Long unidadeMedidaId, Long unidadeCustoId, Model model) {
+                                  String descricao, Long unidadeMedidaId, Long unidadeCustoId,
+                                  String quantidade, String observacao, Model model) {
         int n = nome.length();
         model.addAttribute("nomeNovo", nome);
         model.addAttribute("tamanho", n);
@@ -193,6 +255,9 @@ public class ConsultaPaginaController {
         // [NOVO] unidade de custo (opcional), igual à de medida
         model.addAttribute("unidadesCusto", adicionaisService.listarTodasUnidadesCustos());
         model.addAttribute("unidadeCustoId", unidadeCustoId);
+        model.addAttribute("quantidade", quantidade == null ? "" : quantidade);
+        model.addAttribute("observacao", observacao == null ? "" : observacao);
+        model.addAttribute("maxObservacao", QuantidadeServico.MAX_OBSERVACAO);
         return "servicos/cadastro";
     }
 }

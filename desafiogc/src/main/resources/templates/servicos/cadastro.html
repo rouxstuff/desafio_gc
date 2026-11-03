@@ -51,6 +51,15 @@
                             </div>
                         </div>
 
+                        <label class="rotulo" for="quantidade" style="margin-top:16px">Quantidade <small>(opcional, na unidade de medida escolhida)</small></label>
+                        <input class="campo" type="text" inputmode="decimal" id="quantidade" name="quantidade"
+                               autocomplete="off" th:value="${quantidade}">
+                        <p class="nota" style="margin-top:8px">Peça, conjunto e serviço: número inteiro. Peso e medidas: use vírgula (ex.: 2,5).</p>
+
+                        <label class="rotulo" for="observacao" style="margin-top:16px">Observação <small>(opcional)</small></label>
+                        <textarea class="campo" id="observacao" name="observacao" rows="2"
+                                  th:maxlength="${maxObservacao}" th:text="${observacao}"></textarea>
+
                         <label class="rotulo" for="descricaoServico" style="margin-top:16px">Descrição <small>(opcional, máx. 100)</small></label>
                         <textarea class="campo" id="descricaoServico" name="descricaoServico" rows="2" maxlength="100"
                                   th:text="${descricaoServico}"></textarea>
