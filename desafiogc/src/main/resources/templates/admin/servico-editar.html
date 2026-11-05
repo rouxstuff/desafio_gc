@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Alterar serviço')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('servicos')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Alterar serviço', ${servico.nomeServico})}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
+            <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
+
+            <h2>Alterar serviço</h2>
+            <p class="nota">
+                Código <b th:text="${servico.codigoServico}">CIV-4096348</b>
+                · <span th:text="${servico.categoria != null ? servico.categoria.categoriaNome : 'Sem categoria'}">CIVIL</span>
+                · <span class="selo" th:classappend="${servico.status.name().toLowerCase()}" th:text="${servico.status}">APROVADO</span>
+            </p>
+            <p class="nota" th:if="${servico.motivoRejeicao != null}">
+                Motivo da reprovação: <span th:text="${servico.motivoRejeicao}"></span>
+            </p>
+            <p class="nota">O nome, a categoria e o código não mudam aqui. O status muda em <b>Aprovações</b>.</p>
+
+            <form th:action="@{/admin/servicos/{c}(c=${servico.codigoServico})}" method="post">
+                <span class="rotulo">Serviço</span>
+                <div class="servico-escolhido"><span th:text="${servico.nomeServico}">ELETRICISTA</span></div>
+
+                <div class="duas-colunas">
+                    <div>
+                        <label class="rotulo" for="unidadeMedidaId">Unidade de medida</label>
+                        <select class="campo" id="unidadeMedidaId" name="unidadeMedidaId">
+                            <option value="">Sem unidade</option>
+                            <option th:each="u : ${unidadesMedida}" th:value="${u.id}"
+                                    th:text="${u.codigo + ' - ' + u.descricao}"
+                                    th:selected="${servico.unidadeMedida != null and servico.unidadeMedida.id == u.id}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="rotulo" for="unidadeCustoId">Unidade de custo</label>
+                        <select class="campo" id="unidadeCustoId" name="unidadeCustoId">
+                            <option value="">Sem unidade de custo</option>
+                            <option th:each="u : ${unidadesCusto}" th:value="${u.id}" th:text="${u.maoDeObra}"
+                                    th:selected="${servico.unidadeCusto != null and servico.unidadeCusto.id == u.id}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <label class="rotulo" for="descricaoServico" style="margin-top:16px">Descrição <small th:text="'(opcional, máx. ' + ${maxDescricao} + ')'">(opcional, máx. 100)</small></label>
+                <textarea class="campo" id="descricaoServico" name="descricaoServico" rows="2"
+                          th:maxlength="${maxDescricao}" th:text="${servico.descricaoServico}"></textarea>
+
+                <p class="nota" style="margin-top:12px">A unidade de medida passa a valer para quem contratar este serviço. Compradores e fornecedores não conseguem alterá-la.</p>
+
+                <div style="display:flex;gap:12px;align-items:center;margin-top:16px">
+                    <button type="submit" class="acao sec" style="max-width:220px">Salvar alterações</button>
+                    <a class="tabela-link" th:href="@{/admin/servicos}">Voltar para Serviços</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>

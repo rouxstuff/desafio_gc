@@ -18,5 +18,15 @@ Como conferir: com `show-sql: true`, abra a aba Fornecedores e conte as queries 
 # Prefixo da categoria nos códigos
 - `CodigoComPrefixo` (novo) + `ImportacaoService`: a importação acrescenta o prefixo da categoria ao código existente
   (4057137 -> CIV-4057137) sem alterá-lo; vínculos aceitam o código com ou sem prefixo.
-- O contador do gerador só considera códigos curtos (sequência do sistema); códigos SAP de 7 dígitos não mexem nele.
+- O gerador continua do último número da categoria (maior número entre os códigos PREFIXO-NÚMERO existentes e o contador): FAC-4048071 -> próximo FAC-4048072.
 - `ServicoService.gerarCodigo` pula números que já existem, então nunca repete um código.
+
+# Quantidade e observação ao contratar / solicitar
+- Serviço APROVADO com unidade de medida: a tela de detalhes mostra a unidade (somente leitura), **quantidade** (obrigatória)
+  e **observação**. Unidade de medida e adicionais não são oferecidos (e o servidor ignora se vierem no POST).
+- Demais casos (aprovado sem unidade, pendente, rejeitado): continua escolhendo unidade e adicionais; quantidade é opcional
+  e só vale com unidade escolhida.
+- Solicitar novo serviço: quantidade (opcional, validada pela unidade escolhida) e observação.
+- Regras (`QuantidadeServico`): ST, ZCJ e SV só inteiro; demais unidades decimal com vírgula (até 3 casas); sempre > 0;
+  ponto não é aceito (evita "1.500" virar 1,5). Observação até 200 caracteres.
+- Limite atual: a confirmação só exibe a quantidade na tela de conclusão; ainda não grava a contratação no banco.

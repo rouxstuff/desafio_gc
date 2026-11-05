@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Usuários')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('usuarios')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Usuários', 'Crie usuários (o login é o e-mail) e vincule cada fornecedor da base ao seu usuário. Cada fornecedor tem um único usuário.')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
+            <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
+
+            <!-- ============================================================ novo usuário -->
+            <h2 id="novo">Novo usuário</h2>
+            <form th:action="@{/admin/usuarios}" method="post" autocomplete="off">
+                <div class="duas-colunas">
+                    <div>
+                        <label class="rotulo" for="email">E-mail (será o login)</label>
+                        <input class="campo" type="email" id="email" name="email" maxlength="254" required
+                               th:value="${formEmail}" placeholder="nome@empresa.com">
+                    </div>
+                    <div>
+                        <label class="rotulo" for="senha">Senha provisória <small>(mínimo de 8 caracteres)</small></label>
+                        <input class="campo" type="password" id="senha" name="senha" minlength="8" maxlength="72"
+                               required autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="duas-colunas">
+                    <div>
+                        <label class="rotulo" for="perfil">Perfil</label>
+                        <select class="campo" id="perfil" name="perfil">
+                            <option th:each="p : ${perfis}" th:value="${p.name()}"
+                                    th:text="${p.name() == 'ADMIN' ? 'Administrador' : (p.name() == 'FORNECEDOR' ? 'Fornecedor' : 'Comprador')}"
+                                    th:selected="${formPerfil != null ? formPerfil == p.name() : p.name() == 'COMPRADOR'}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="rotulo" for="fornecedorId">Fornecedor <small>(só aparecem os que ainda não têm usuário)</small></label>
+                        <select class="campo" id="fornecedorId" name="fornecedorId">
+                            <option value="">Selecione…</option>
+                            <option th:each="f : ${fornecedoresSemUsuario}" th:value="${f.id()}" th:text="${f.rotulo()}"
+                                    th:selected="${formFornecedorId != null and formFornecedorId == f.id()}"></option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="acao sec" style="max-width:220px">Criar usuário</button>
+            </form>
+
+            <!-- ============================================================ usuários existentes -->
+            <h2 style="margin-top:36px">Usuários cadastrados</h2>
+            <p class="dica" th:if="${usuarios.isEmpty()}">Nenhum usuário cadastrado.</p>
+            <div class="tabela-rolagem">
+                <table th:unless="${usuarios.isEmpty()}">
+                    <thead>
+                    <tr><th>E-mail</th><th>Perfil</th><th>Fornecedor</th><th>Vincular a outro fornecedor</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="u : ${usuarios}">
+                        <td th:text="${u.email}">maria@empresa.com</td>
+                        <td>
+                            <span class="selo neutro" th:each="r : ${u.roles}" th:text="${r}">COMPRADOR</span>
+                        </td>
+                        <td>
+                            <span th:if="${u.fornecedor != null}"
+                                  th:text="${u.fornecedor.codigoFornecedor + (u.fornecedor.nomeFornecedor != null and !u.fornecedor.nomeFornecedor.isBlank() ? ' - ' + u.fornecedor.nomeFornecedor : '')}">200982674</span>
+                            <span th:if="${u.fornecedor == null}">—</span>
+                        </td>
+                        <td class="acoes-linha">
+                            <form th:if="${u.roles.contains(perfilFornecedor)}"
+                                  th:action="@{/admin/usuarios/{id}/fornecedor(id=${u.id})}" method="post">
+                                <select class="campo" name="fornecedorId" aria-label="Fornecedor">
+                                    <option value="">Selecione…</option>
+                                    <!-- só fornecedores livres (sem usuário) e o fornecedor atual deste usuário -->
+                                    <option th:each="f : ${fornecedores}"
+                                            th:if="${f.usuarios() == 0 or (u.fornecedor != null and u.fornecedor.id == f.id())}"
+                                            th:value="${f.id()}" th:text="${f.rotulo()}"
+                                            th:selected="${u.fornecedor != null and u.fornecedor.id == f.id()}"></option>
+                                </select>
+                                <button class="acao sec" type="submit"
+                                        th:text="${u.fornecedor == null ? 'Vincular' : 'Trocar'}">Vincular</button>
+                            </form>
+                            <span th:unless="${u.roles.contains(perfilFornecedor)}">Só para perfil Fornecedor</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ============================================================ fornecedores sem usuário -->
+            <h2 style="margin-top:36px">Fornecedores sem usuário</h2>
+            <p>
+                <strong th:text="${#lists.size(fornecedoresSemUsuario)}">111</strong>
+                de <strong th:text="${#lists.size(fornecedores)}">111</strong>
+                fornecedores ainda não têm usuário.
+            </p>
+            <div class="tabela-rolagem">
+                <table th:unless="${fornecedoresSemUsuario.isEmpty()}">
+                    <thead><tr><th>Código</th><th>Nome</th><th>Ação</th></tr></thead>
+                    <tbody>
+                    <tr th:each="f : ${fornecedoresSemUsuario}">
+                        <td class="codigo" th:text="${f.codigo()}">200982674</td>
+                        <td th:text="${f.nome() != null and !f.nome().isBlank() ? f.nome() : '—'}">—</td>
+                        <td><a class="tabela-link" th:href="@{/admin/usuarios(fornecedorId=${f.id()})} + '#novo'">Criar usuário</a></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+
+<script>
+    // o fornecedor só vale (e é obrigatório) para o perfil Fornecedor
+    (function () {
+        var perfil = document.getElementById('perfil');
+        var fornecedor = document.getElementById('fornecedorId');
+        function ajustar() {
+            var ehFornecedor = perfil.value === 'FORNECEDOR';
+            fornecedor.disabled = !ehFornecedor;
+            fornecedor.required = ehFornecedor;
+        }
+        perfil.addEventListener('change', ajustar);
+        ajustar();
+    })();
+</script>
+</body>
+</html>

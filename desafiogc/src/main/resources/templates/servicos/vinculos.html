@@ -37,17 +37,46 @@
 
             <h2 style="margin-top:32px">Vínculos atuais</h2>
 
-            <form th:action="@{/vinculos}" method="get">
-                <label class="rotulo" for="filtroServico">Serviços</label>
+            <!-- [BUSCA + LISTA] a barra de pesquisa filtra a lista suspensa (só serviços aprovados, até 50 resultados).
+                 Sem pesquisa, a lista mostra todos os serviços aprovados. Escolher um serviço mostra os fornecedores. -->
+            <form th:action="@{/vinculos}" method="get" role="search">
+                <div class="filtro" style="align-items:flex-end;margin-bottom:12px">
+                    <div style="flex:1">
+                        <label class="rotulo" for="busca">Pesquisar serviço <small>(nome ou código)</small></label>
+                        <input class="campo" type="search" id="busca" name="busca" th:value="${busca}"
+                               placeholder="Ex.: soldador, CIV-4057137 ou 4057137" autocomplete="off">
+                    </div>
+                    <button type="submit" class="acao sec">Buscar</button>
+                    <a th:if="${busca != '' or servicoFiltro != null}" th:href="@{/vinculos}" class="acao-link"
+                       style="padding:13px 6px">Limpar</a>
+                </div>
+
+                <label class="rotulo" for="filtroServico">Serviços
+                    <small th:if="${resultadosBusca != null}">(filtrados pela pesquisa)</small>
+                </label>
                 <select class="campo" id="filtroServico" name="servicoFiltro" onchange="this.form.submit()">
                     <option value="">—</option>
-                    <option th:each="s : ${servicosVinculaveis}"
+                    <option th:each="s : ${resultadosBusca != null ? resultadosBusca : servicosVinculaveis}"
                             th:value="${s.codigoServico}"
                             th:text="${s.codigoServico + ' - ' + s.nomeServico}"
                             th:selected="${servicoFiltro == s.codigoServico}"></option>
                 </select>
             </form>
 
+            <p th:if="${resultadosBusca != null}" style="margin-top:10px">
+                <span th:if="${#lists.isEmpty(resultadosBusca)}">
+                    Nenhum serviço aprovado encontrado para "<strong th:text="${busca}"></strong>".
+                </span>
+                <span th:unless="${#lists.isEmpty(resultadosBusca)}">
+                    <strong th:text="${#lists.size(resultadosBusca)}"></strong>
+                    <span th:text="${#lists.size(resultadosBusca) == 1 ? 'serviço encontrado' : 'serviços encontrados'}"></span>
+                    <small th:if="${#lists.size(resultadosBusca) >= 50}">(mostrando os 50 primeiros: refine a pesquisa)</small>
+                </span>
+            </p>
+
+            <h3 th:if="${servicoSelecionado != null}" style="margin-top:22px">
+                Fornecedores de <span th:text="${servicoSelecionado}"></span>
+            </h3>
             <ul th:if="${fornecedoresVinculados != null}">
                 <li th:each="rotulo : ${fornecedoresVinculados}" th:text="${rotulo}"></li>
             </ul>

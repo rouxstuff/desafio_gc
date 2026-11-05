@@ -8,15 +8,17 @@
     <div class="login-cartao">
         <span class="login-logo">GERDAU</span>  <!-- <img src="img/gerdau-logo.svg" alt="Gerdau"> -->
         <h1>Entrar no sistema</h1>
-        <p class="login-sub">Use seu usuário e senha para acessar o catálogo.</p>
+        <p class="login-sub">Use seu e-mail e senha para acessar o catálogo.</p>
 
         <!-- aparece quando a URL for /login?error -->
-        <p class="alerta" th:if="${param.error}">Usuário ou senha incorretos. Tente de novo.</p>
+        <p class="alerta" th:if="${param.error}">E-mail ou senha incorretos. Tente de novo.</p>
 
         <form method="post" th:action="@{/login}">
             <div class="login-campo">
-                <label class="rotulo" for="username">Usuário</label>
-                <input class="campo" type="text" id="username" name="username" autocomplete="username" required autofocus>
+                <label class="rotulo" for="username">E-mail</label>
+                <!-- o name continua "username" porque é o campo que o Spring Security lê; o conteúdo agora é o e-mail -->
+                <input class="campo" type="email" id="username" name="username" autocomplete="username" required autofocus
+                       placeholder="nome@empresa.com">
             </div>
             <div class="login-campo">
                 <label class="rotulo" for="password">Senha</label>
@@ -31,6 +33,7 @@
         <p class="login-ajuda">Problemas para acessar? Fale com o administrador do sistema.</p>
     </div>
 </main>
+<script th:src="@{/js/login.js}"></script>
 </body>
 
 

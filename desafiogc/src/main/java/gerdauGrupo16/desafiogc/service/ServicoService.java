@@ -10,6 +10,7 @@ import gerdauGrupo16.desafiogc.repository.ServicoOpcaoView;
 import gerdauGrupo16.desafiogc.repository.ServicoRepository;
 import gerdauGrupo16.desafiogc.repository.UnidadeCustoRepository;
 import gerdauGrupo16.desafiogc.repository.UnidadeMedidaRepository;
+import gerdauGrupo16.desafiogc.service.importacao.CodigoComPrefixo;
 import gerdauGrupo16.desafiogc.service.reguaAderencia.ReguaAderencia;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,9 @@ import org.springframework.data.domain.Sort;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -62,13 +65,25 @@ public class ServicoService {
         return repository.findAll();
     }
 
-    /** Catálogo paginado (por nome OU código). Tamanho máximo de página: 500. */
+    /**
+     * Quem pode ver o serviço REJEITADO: só o administrador. Para os demais perfis o serviço rejeitado não existe
+     * (não aparece em consulta, catálogo, API nem na tela de detalhes).
+     */
+    public static boolean visivelPara(Servico servico, boolean admin) {
+        return admin || servico.getStatus() != StatusServico.REJEITADO;
+    }
+
+    /** Catálogo paginado (por nome OU código). Tamanho máximo de página: 500. incluirRejeitados: só o administrador. */
     @Transactional(readOnly = true)
-    public Page<Servico> listarPagina(String q, int pagina, int tamanho) {
+    public Page<Servico> listarPagina(String q, int pagina, int tamanho, boolean incluirRejeitados) {
         Pageable pageable = PageRequest.of(Math.max(pagina, 0), Math.min(Math.max(tamanho, 1), 500), Sort.by("nomeServico"));
-        if (q == null || q.isBlank()) return repository.findAll(pageable);
+        if (q == null || q.isBlank()) {
+            return incluirRejeitados ? repository.findAll(pageable) : repository.findByStatusNot(StatusServico.REJEITADO, pageable);
+        }
         String termo = padronizar(q);
-        return repository.findByNomeServicoContainingOrCodigoServicoContaining(termo, termo, pageable);
+        return incluirRejeitados
+                ? repository.findByNomeServicoContainingOrCodigoServicoContaining(termo, termo, pageable)
+                : repository.buscarPaginaSemStatus(StatusServico.REJEITADO, termo, pageable);
     }
 
     public List<Servico> buscarPorNome(String nome) {
@@ -76,19 +91,26 @@ public class ServicoService {
     }
 
     // [ALTERADO, do Kaio] aceita só um dos dois filtros
-    public List<Servico> buscarPorCategoriaNomeEServicoNome(String categoriaNome, String nomeServico) {
+    public List<Servico> buscarPorCategoriaNomeEServicoNome(String categoriaNome, String nomeServico, boolean incluirRejeitados) {
         boolean temCategoria = categoriaNome != null && !categoriaNome.isBlank();
         boolean temNome = nomeServico != null && !nomeServico.isBlank();
+        StatusServico fora = StatusServico.REJEITADO;
         if (temCategoria && temNome) {
-            return repository.findByCategoria_CategoriaNomeAndNomeServicoContaining(padronizar(categoriaNome), padronizar(nomeServico));
+            return incluirRejeitados
+                    ? repository.findByCategoria_CategoriaNomeAndNomeServicoContaining(padronizar(categoriaNome), padronizar(nomeServico))
+                    : repository.findByCategoria_CategoriaNomeAndNomeServicoContainingAndStatusNot(padronizar(categoriaNome), padronizar(nomeServico), fora);
         }
         if (temCategoria) {
-            return repository.findByCategoria_CategoriaNomeContaining(padronizar(categoriaNome));
+            return incluirRejeitados
+                    ? repository.findByCategoria_CategoriaNomeContaining(padronizar(categoriaNome))
+                    : repository.findByCategoria_CategoriaNomeContainingAndStatusNot(padronizar(categoriaNome), fora);
         }
         if (temNome) {
-            return repository.findByNomeServicoContaining(padronizar(nomeServico));
+            return incluirRejeitados
+                    ? repository.findByNomeServicoContaining(padronizar(nomeServico))
+                    : repository.findByNomeServicoContainingAndStatusNot(padronizar(nomeServico), fora);
         }
-        return repository.findAll();
+        return incluirRejeitados ? repository.findAll() : repository.findByStatusNot(fora);
     }
 
     // [ALTERADO] antes buscava pelo NOME exato; agora o nome pode repetir em categorias diferentes,
@@ -100,12 +122,13 @@ public class ServicoService {
 
     /** Candidatos da tela de consulta: nome contém o digitado (ou vice-versa), também comparando as formas
      *  normalizadas (assim "H EXTRA" acha "HORA EXTRA"). Usa o índice em memória e devolve no máximo 50. */
-    public List<Servico> buscarCandidatos(String digitado) {
+    public List<Servico> buscarCandidatos(String digitado, boolean incluirRejeitados) {
         String dPad = padronizar(digitado);
         if (dPad.isEmpty()) return new ArrayList<>();
         String dNorm = regua.perfil(digitado).normalizado();
 
         List<String> codigos = indice.entradas().stream()
+                .filter(e -> incluirRejeitados || e.status() != StatusServico.REJEITADO)
                 .filter(e -> e.nomePadrao().contains(dPad) || dPad.contains(e.nomePadrao())
                         || (!dNorm.isEmpty() && !e.perfil().normalizado().isEmpty()
                             && (e.perfil().normalizado().contains(dNorm) || dNorm.contains(e.perfil().normalizado()))))
@@ -116,6 +139,31 @@ public class ServicoService {
         List<Servico> achados = new ArrayList<>(repository.findAllById(codigos));
         achados.sort(Comparator.comparing(Servico::getNomeServico));
         return achados;
+    }
+
+    /** [PESQUISA MÚLTIPLA] Resultado de pesquisar vários termos de uma vez (separados por ponto e vírgula).
+     *  candidatos: união sem repetição, ordenada por nome; termosPorCodigo: de qual(is) termo(s) cada serviço veio
+     *  (o primeiro é usado como "digitado" na tela de detalhes); semResultado: termos que não acharam nada. */
+    public record BuscaMultipla(List<String> termos, List<Servico> candidatos,
+                                Map<String, List<String>> termosPorCodigo, List<String> semResultado) { }
+
+    /** Roda a busca normal ({@link #buscarCandidatos(String, boolean)}) para cada termo e junta os resultados. Até 50 por termo. */
+    public BuscaMultipla buscarMultiplo(String digitado, boolean incluirRejeitados) {
+        List<String> termos = TermosBusca.separar(digitado);
+        Map<String, Servico> unicos = new LinkedHashMap<>();
+        Map<String, List<String>> termosPorCodigo = new LinkedHashMap<>();
+        List<String> semResultado = new ArrayList<>();
+        for (String termo : termos) {
+            List<Servico> achados = buscarCandidatos(termo, incluirRejeitados);
+            if (achados.isEmpty()) semResultado.add(termo);
+            for (Servico s : achados) {
+                unicos.putIfAbsent(s.getCodigoServico(), s);
+                termosPorCodigo.computeIfAbsent(s.getCodigoServico(), k -> new ArrayList<>()).add(termo);
+            }
+        }
+        List<Servico> todos = new ArrayList<>(unicos.values());
+        todos.sort(Comparator.comparing(Servico::getNomeServico));
+        return new BuscaMultipla(termos, todos, termosPorCodigo, semResultado);
     }
 
     // ----------------------------------------------------------------- [NOVO, do Kaio] régua de aderência
@@ -181,7 +229,14 @@ public class ServicoService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "A categoria " + categoria.getCategoriaNome() + " não tem prefixo configurado.");
         }
-        // [PREFIXO] pula números que já existem (ex.: códigos importados), para nunca gerar um código repetido
+        // [PREFIXO] continua do ÚLTIMO número registrado na categoria (inclusive os códigos importados, ex.: FAC-4048071
+        // -> próximo FAC-4048072). Se o contador da categoria estiver atrás, ele é elevado antes de incrementar.
+        List<String> codigosExistentes = indice.entradas().stream().map(IndiceServicos.Entrada::codigo).toList();
+        long maiorExistente = CodigoComPrefixo.maiorNumero(codigosExistentes, categoria.getPrefixo());
+        if (maiorExistente > 0) {
+            categoriaRepository.garantirUltimoNumero(categoria.getId(), maiorExistente);
+        }
+        // e pula números que já existem, para nunca gerar um código repetido
         for (int tentativa = 0; tentativa < 1000; tentativa++) {
             categoriaRepository.incrementarUltimoNumero(categoria.getId());
             long numero = categoriaRepository.buscarUltimoNumero(categoria.getId());
@@ -198,9 +253,43 @@ public class ServicoService {
         return repository.findByStatusOrderByNomeServico(status);
     }
 
+    /** [BUSCA NOS VÍNCULOS] Procura por nome OU código (parte do texto, sem diferenciar maiúsculas/acentos).
+     *  Devolve no máximo {@code max} resultados, ordenados por nome. Termo vazio devolve lista vazia. */
+    @Transactional(readOnly = true)
+    public List<ServicoOpcaoView> buscarOpcoes(StatusServico status, String texto, int max) {
+        // "%" e "_" são curingas do LIKE: tiramos para o usuário não casar tudo sem querer
+        String termo = padronizar(texto).replace("%", "").replace("_", "").trim();
+        if (termo.isEmpty()) return List.of();
+        return repository.buscarOpcoes(status, termo, PageRequest.of(0, Math.max(max, 1)));
+    }
+
     /** [PERFORMANCE] Só código e nome (1 query leve). Usado nas listas suspensas da tela de vínculos. */
     public List<ServicoOpcaoView> listarOpcoesPorStatus(StatusServico status) {
         return repository.listarOpcoes(status);
+    }
+
+    public static final int LIMITE_DESCRICAO = 100;
+
+    /**
+     * Altera as características de um serviço já cadastrado (tela do administrador): unidade de medida, unidade de
+     * custo e descrição. Nome, categoria, código e status não mudam aqui (o nome é a base da checagem de duplicados;
+     * o status muda em Aprovações). Unidade nula = remove a unidade.
+     * 404 serviço/unidade não existe | 400 descrição maior que o limite.
+     */
+    @Transactional
+    public Servico atualizarCaracteristicas(String codigo, Long unidadeMedidaId, Long unidadeCustoId, String descricao) {
+        Servico s = repository.findById(codigo).orElseThrow(() -> naoEncontrado("Serviço não encontrado."));
+        String desc = descricao == null ? null : descricao.strip();
+        if (desc != null && desc.length() > LIMITE_DESCRICAO) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A descrição deve ter no máximo " + LIMITE_DESCRICAO + " caracteres.");
+        }
+        s.setUnidadeMedida(unidadeMedidaId == null ? null : unidadeMedidaRepository.findById(unidadeMedidaId)
+                .orElseThrow(() -> naoEncontrado("Unidade de medida não encontrada.")));
+        s.setUnidadeCusto(unidadeCustoId == null ? null : unidadeCustoRepository.findById(unidadeCustoId)
+                .orElseThrow(() -> naoEncontrado("Unidade de custo não encontrada.")));
+        s.setDescricaoServico(desc == null || desc.isEmpty() ? null : desc);
+        return s;   // o JPA grava sozinho no commit (dirty checking)
     }
 
     @Transactional

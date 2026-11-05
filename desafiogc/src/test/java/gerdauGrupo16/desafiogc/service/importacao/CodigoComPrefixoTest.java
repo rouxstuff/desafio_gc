@@ -24,4 +24,12 @@ class CodigoComPrefixoTest {
         assertEquals("4057137", CodigoComPrefixo.aplicar("4057137", " "));
         assertEquals("", CodigoComPrefixo.aplicar(null, "CIV"));
     }
+
+    @Test
+    void maiorNumeroDaCategoriaIgnoraOutrosPrefixosEFormatosInvalidos() {
+        var codigos = java.util.List.of("FAC-4048071", "FAC-000007", "CIV-4999999", "FAC-ABC", "FAC-", "FACX-5000000", "fac-4048075");
+        assertEquals(4048075L, CodigoComPrefixo.maiorNumero(codigos, "FAC"));
+        assertEquals(4999999L, CodigoComPrefixo.maiorNumero(codigos, "CIV"));
+        assertEquals(0L, CodigoComPrefixo.maiorNumero(codigos, "ELETRO"));
+    }
 }

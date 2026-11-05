@@ -6,6 +6,7 @@ import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.service.ServicoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -25,21 +26,22 @@ public class ServicoController {
     // paginado: com milhares de serviços, devolver tudo de uma vez seria lento. Ex.: /api/servicos?pagina=0&tamanho=100
     @GetMapping
     public List<Servico> listar(@RequestParam(defaultValue = "0") int pagina,
-                                @RequestParam(defaultValue = "100") int tamanho) {
-        return service.listarPagina(null, pagina, tamanho).getContent();
+                                @RequestParam(defaultValue = "100") int tamanho, Authentication auth) {
+        return service.listarPagina(null, pagina, tamanho, PerfilAcesso.ehAdmin(auth)).getContent();
     }
 
     @GetMapping("/categoriaNomeServico")
     public List<Servico> buscarCategoriaNome_ServicoNome(@RequestParam(required = false) String categoriaNome,
-                                                         @RequestParam(required = false) String nomeServico) {
-        return  service.buscarPorCategoriaNomeEServicoNome(categoriaNome, nomeServico);
+                                                         @RequestParam(required = false) String nomeServico,
+                                                         Authentication auth) {
+        return  service.buscarPorCategoriaNomeEServicoNome(categoriaNome, nomeServico, PerfilAcesso.ehAdmin(auth));
     }
 
     @GetMapping("/busca")
     public List<Servico> buscar(@RequestParam String nome,
                                 @RequestParam(defaultValue = "0") int pagina,
-                                @RequestParam(defaultValue = "100") int tamanho) {
-        return service.listarPagina(nome, pagina, tamanho).getContent();
+                                @RequestParam(defaultValue = "100") int tamanho, Authentication auth) {
+        return service.listarPagina(nome, pagina, tamanho, PerfilAcesso.ehAdmin(auth)).getContent();
     }
 
     // [NOVO, do Kaio] Régua de aderência. Ex.: GET /api/servicos/sugestoes?categoriaId=1&nome=Ajudante Geral

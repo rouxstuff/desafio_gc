@@ -245,8 +245,8 @@ public class ImportacaoService {
                 categoriasNovas.size(), 0, erros.lista, erros.total, avisos.lista);
     }
 
-    /** Se vierem códigos no formato PREFIXO-000123 (até 6 dígitos = sequência do sistema), o contador da categoria não pode
-     *  ficar atrás deles. Códigos SAP importados (7 dígitos, ex.: CIV-4057137) não mexem no contador. */
+    /** Se vierem códigos no formato PREFIXO-NÚMERO (inclusive os do SAP, ex.: CIV-4057137), o contador da categoria não pode
+     *  ficar atrás deles: o próximo código gerado continua do último número da categoria. */
     private void sincronizarContadores(Iterable<Servico> importados) {
         Map<Long, Long> maximos = new HashMap<>();
         for (Servico s : importados) {
@@ -254,7 +254,7 @@ public class ImportacaoService {
             if (c == null || c.getPrefixo() == null) continue;
             String pre = c.getPrefixo() + "-";
             String cod = s.getCodigoServico();
-            if (!cod.startsWith(pre) || cod.length() == pre.length() || cod.length() - pre.length() > 6) continue;
+            if (!cod.startsWith(pre) || cod.length() == pre.length() || cod.length() - pre.length() > 18) continue;
             String resto = cod.substring(pre.length());
             if (resto.chars().allMatch(Character::isDigit)) maximos.merge(c.getId(), Long.parseLong(resto), Long::max);
         }
