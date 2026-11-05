@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package gerdauGrupo16.desafiogc.repository;
 
 import gerdauGrupo16.desafiogc.model.entity.Usuario;
@@ -21,3 +22,15 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query("select u from Usuario u left join fetch u.fornecedor order by u.email")
     List<Usuario> listarComFornecedor();
 }
+=======
+package gerdauGrupo16.desafiogc.repository;
+
+import gerdauGrupo16.desafiogc.model.entity.Usuario;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+    Optional<Usuario> findByLogin(String login);
+}
+>>>>>>> 98d0b438cd52f872c6c87d7e52ad78bc0effa892
