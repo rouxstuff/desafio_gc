@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: cabecalho('Login')}"></head>
@@ -38,43 +37,3 @@
 </body>
 
 
-=======
-<!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: cabecalho('Login')}"></head>
-
-<body>
-<header th:replace="~{fragments/layout :: topo('Login')}"></header>
-<main class="login-pagina">
-    <div class="login-cartao">
-        <span class="login-logo"><img src="img/gerdau-logo.svg" alt="Gerdau" ></span>
-        <h1>Entrar no sistema</h1>
-        <p class="login-sub">Use seu usuário e senha para acessar o catálogo.</p>
-
-        <!-- aparece quando a URL for /login?error -->
-        <p class="alerta" th:if="${param.error}">Usuário ou senha incorretos. Tente de novo.</p>
-
-        <form method="post" th:action="@{/login}">
-            <div class="login-campo">
-                <label class="rotulo" for="username">Usuário</label>
-                <input class="campo" type="text" id="username" name="username" autocomplete="username" required autofocus>
-            </div>
-            <div class="login-campo">
-                <label class="rotulo" for="password">Senha</label>
-                <div class="senha-wrap">
-                    <input class="campo" type="password" id="password" name="password" autocomplete="current-password" required>
-                    <button type="button" class="senha-mostrar" id="mostrarSenha">Mostrar</button>
-                </div>
-            </div>
-            <button type="submit" class="acao">Entrar</button>
-        </form>
-
-        <p class="login-ajuda">Problemas para acessar? Fale com o administrador do sistema.</p>
-    </div>
-
-</main>
-<script th:src="@{/js/login.js}"></script>
-</body>
-
-
->>>>>>> 98d0b438cd52f872c6c87d7e52ad78bc0effa892
