@@ -22,6 +22,9 @@
 
             <p class="nota" th:if="${medida != null}">Unidade de medida: <b th:text="${medida}">H - Hora</b></p>
 
+            <p class="nota" th:if="${quantidade != null}">Quantidade: <b th:text="${quantidade}">5 ST</b></p>
+            <p class="nota" th:if="${observacao != null}">Observação: <b th:text="${observacao}">...</b></p>
+
             <span class="rotulo" th:unless="${itens.isEmpty()}">Adicionais marcados</span>
             <ul class="resumo-ad" th:unless="${itens.isEmpty()}">
                 <li th:each="item : ${itens}" th:text="${item}">Hora extra</li>

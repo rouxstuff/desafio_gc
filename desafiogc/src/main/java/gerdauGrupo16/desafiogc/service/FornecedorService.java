@@ -57,15 +57,12 @@ public class FornecedorService {
         }
         fornecedorServicoRepository.save(new FornecedorServico(fornecedor, servico));
     }
-
-    /** [NOVO, do Kaio] Lista os serviços aos quais o fornecedor está vinculado. */
     @Transactional(readOnly = true)
     public List<Servico> listarServicosDoFornecedor(Long fornecedorId) {
         if (!fornecedorRepository.existsById(fornecedorId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Fornecedor não encontrado.");
         }
-        return fornecedorServicoRepository.findByFornecedor_Id(fornecedorId).stream()
-                .map(FornecedorServico::getServico)
-                .toList();
+        return fornecedorServicoRepository.listarServicosDoFornecedor(fornecedorId);
     }
+
 }

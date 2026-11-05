@@ -39,7 +39,7 @@
                     </div>
 <p class="nota" th:if="${similares.isEmpty()}">Nenhum serviço parecido encontrado.</p>
 
-                    <a class="acao acao-link" th:href="@{/servicos/novo(nome=${nomeNovo})}">Cadastrar novo serviço</a>
+                    <a th:unless="${ehAdmin}" class="acao acao-link" th:href="@{/servicos/novo(nome=${nomeNovo})}">Cadastrar novo serviço</a>
                 </aside>
             </div>
         </div>

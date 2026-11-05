@@ -1,0 +1,36 @@
+# ============================================================================
+# DICIONÁRIO DE NORMALIZAÇÃO DO FILTRO DE ENTRADA
+#
+# PONTO DE PARTIDA montado a partir dos exemplos da Entrega 2. Quando o
+# dicionário completo da trilha IA & Dados estiver pronto, basta acrescentar
+# ou trocar linhas aqui. NÃO precisa mexer no código Java.
+#
+# Formato: expressão_regular;substituição      (uma regra por linha, em ordem)
+# O texto chega aqui em MAIÚSCULAS, sem acento, sem pontuação e com espaços
+# simples (ex.: "H.EXTRA" chega como "H EXTRA").
+# Linhas que começam com # e linhas vazias são ignoradas.
+# Depois de editar, use "Recarregar índice" em Admin > Importação (ou reinicie).
+# ============================================================================
+
+# Modificadores: palavras que, se forem diferentes, indicam serviços DIFERENTES
+# (ex.: AJUDANTE HE x AJUDANTE HN). Nunca viram duplicata bloqueada.
+@modificadores;HE,HN,NOT,DF,SS,DISP,PERICULOSIDADE,INSALUBRIDADE,MAIOR,MENOR
+
+# periculosidade e erros de grafia
+\b(PRERICULOSIDADE|PERICULOSIDADE|PERICULOSA|PERICULOSO|PERICUL|PERIC)\b;PERICULOSIDADE
+# insalubridade
+\b(INSALUBRIDADE|INSALUBRE|INSALUB|INSAL)\b;INSALUBRIDADE
+# hora extra
+\b(HORAS? EXTRAS?|H EXTRAS?|HEXTRA|HX)\b;HE
+# hora normal
+\b(HORAS? NORMAIS?|H NORMAL)\b;HN
+# noturno
+\b(NOTURNAS?|NOTURNOS?|NOTURN)\b;NOT
+# domingo e feriado
+\b(DOMINGOS? E FERIADOS?|DOM E FER|DOM FER|DOM FERIADO)\b;DF
+# segunda a sábado
+\b(SEGUNDA A SABADO|SEG A SAB|SEG SAB)\b;SS
+# à disposição
+\b(A DISPOSICAO|DISPOSICAO)\b;DISP
+# palavras de ligação (não ajudam a distinguir serviços)
+\b(DE|DA|DO|DAS|DOS)\b;

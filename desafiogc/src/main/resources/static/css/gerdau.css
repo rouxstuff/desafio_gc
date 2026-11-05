@@ -53,11 +53,6 @@ body {
     font-weight: 700;
     letter-spacing: .5px;
 }
-a.marca {
-    pointer-events: none;
-    cursor: default;
-}
-
 .marca span { color: var(--amarelo); font-weight: 400; }
 .menu a {
     color: var(--branco);
@@ -350,3 +345,42 @@ textarea.campo { resize: vertical; font-family: inherit; }
 .alerta.login { background: #fdecea; border-left-color: #c0392b; color: #7b1f14; }
 .login-cartao .acao { margin-top: 6px; }
 .login-ajuda { margin: 18px 0 0; text-align: center; color: var(--cinza-medio); font-size: .85rem; }
+
+/* ===== [NOVO] Cabeçalho responsivo + menu por perfil ===== */
+.topo .container {
+    height: auto;              /* antes: 68px fixo, o menu estourava o cabeçalho */
+    min-height: 68px;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+.menu { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+.menu a { margin-left: 0; }
+.menu a.btn-nav {
+    background: var(--amarelo); color: var(--azul-escuro); font-weight: 700;
+    padding: 7px 14px; border-radius: var(--raio); border-bottom: none;
+}
+.menu a.btn-nav:hover { filter: brightness(1.08); border-bottom: none; }
+.form-sair { margin: 0; }
+.btn-sair {
+    background: transparent; color: var(--branco); border: 1px solid rgba(255, 255, 255, .55);
+    border-radius: var(--raio); padding: 6px 14px; font: inherit; font-size: .9rem; cursor: pointer;
+}
+.btn-sair:hover { background: rgba(255, 255, 255, .12); }
+
+/* tabelas largas rolam na horizontal em vez de estourar a tela */
+.tabela-rolagem { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* botões lado a lado dentro de tabelas (fila de aprovação) */
+.acoes-linha { min-width: 220px; }
+.acoes-linha form { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.acoes-linha .campo { flex: 1 1 140px; min-width: 0; }
+.acoes-linha .acao { width: auto; margin-top: 0; padding: 9px 16px; font-size: .9rem; }
+
+@media (max-width: 760px) {
+    .topo .container { justify-content: center; text-align: center; }
+    .menu { justify-content: center; }
+}
+
+.paginacao { display: flex; justify-content: space-between; gap: 16px; margin-top: 8px; }

@@ -13,24 +13,44 @@
         <div class="cartao">
             <ol th:replace="~{fragments/layout :: passos(1)}"></ol>
 
-            <p class="dica" th:if="${candidatos.isEmpty()}">
+            <p class="dica" th:if="${candidatos.isEmpty() and !multiplo}">
                 Digite o nome do serviço acima e escolha uma das opções da lista.
             </p>
 
+            <!-- [PESQUISA MÚLTIPLA] termos que não acharam nada (com atalho para cadastrar, exceto para o administrador) -->
+            <div class="msg msg-erro" th:if="${multiplo and !termosSemResultado.isEmpty()}">
+                Nenhum serviço encontrado para:
+                <span th:each="t, st : ${termosSemResultado}">
+                    <strong th:text="${t}"></strong><a th:unless="${ehAdmin}" class="tabela-link"
+                        th:href="@{/servicos/novo(nome=${t})}"> (cadastrar)</a><span th:unless="${st.last}">; </span>
+                </span>
+            </div>
+
             <div th:unless="${candidatos.isEmpty()}">
-                <h2>Encontramos mais de um serviço. Escolha o seu:</h2>
+                <h2 th:unless="${multiplo}">Encontramos mais de um serviço. Escolha o seu:</h2>
+                <h2 th:if="${multiplo}">
+                    <span th:text="${#lists.size(candidatos)}"></span>
+                    <span th:text="${#lists.size(candidatos) == 1 ? 'serviço encontrado' : 'serviços encontrados'}"></span>
+                    para <span th:text="${totalTermos}"></span> pesquisas. Escolha o seu:
+                </h2>
                 <table>
-                    <thead><tr><th>Código</th><th>Serviço</th><th>Categoria</th><th>Status</th></tr></thead>
+                    <thead>
+                    <tr>
+                        <th>Código</th><th>Serviço</th><th>Categoria</th><th>Status</th>
+                        <th th:if="${multiplo}">Pesquisa</th>
+                    </tr>
+                    </thead>
                     <tbody>
                     <tr th:each="s : ${candidatos}">
                         <td class="codigo" th:text="${s.codigoServico}">4096348</td>
                         <td>
                             <a class="tabela-link"
-                               th:href="@{/servicos/detalhes(codigo=${s.codigoServico}, digitado=${nomeServico})}"
+                               th:href="@{/servicos/detalhes(codigo=${s.codigoServico}, digitado=${multiplo ? termosPorCodigo.get(s.codigoServico).get(0) : nomeServico})}"
                                th:text="${s.nomeServico}">ELETRICISTA</a>
                         </td>
                         <td th:text="${s.categoria != null ? s.categoria.categoriaNome : '—'}">CIVIL</td>
                         <td><span class="selo" th:classappend="${s.status.name().toLowerCase()}" th:text="${s.status}">APROVADO</span></td>
+                        <td th:if="${multiplo}" th:text="${#strings.listJoin(termosPorCodigo.get(s.codigoServico), '; ')}">ajudante</td>
                     </tr>
                     </tbody>
                 </table>

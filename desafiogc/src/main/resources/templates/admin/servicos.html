@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Serviços')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('servicos')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Serviços', 'Escolha um serviço para alterar a unidade de medida, a unidade de custo e a descrição.')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
+            <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
+
+            <form class="filtro" method="get" th:action="@{/admin/servicos}">
+                <input class="campo" type="text" name="q" th:value="${q}" placeholder="Pesquisar pelo nome ou código…" aria-label="Pesquisar serviço" autocomplete="off">
+                <button type="submit" class="acao sec">Buscar</button>
+                <a th:if="${!q.isEmpty()}" th:href="@{/admin/servicos}" class="tabela-link">Limpar</a>
+            </form>
+
+            <p class="dica" th:if="${servicos.isEmpty()}">Nenhum serviço encontrado.</p>
+
+            <div class="tabela-rolagem"><table th:unless="${servicos.isEmpty()}">
+                <thead>
+                <tr><th>Código</th><th>Serviço</th><th>Categoria</th><th>Unidade de medida</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${servicos}">
+                    <td class="codigo" th:text="${s.codigoServico}">4096348</td>
+                    <td th:text="${s.nomeServico}">AJUDANTE</td>
+                    <td th:text="${s.categoria != null ? s.categoria.categoriaNome : '—'}">CIVIL</td>
+                    <td th:text="${s.unidadeMedida != null ? s.unidadeMedida.codigo : '—'}">H</td>
+                    <td><span class="selo" th:classappend="${s.status.name().toLowerCase()}" th:text="${s.status}">APROVADO</span></td>
+                    <td><a class="tabela-link" th:href="@{/admin/servicos/{c}(c=${s.codigoServico})}">Alterar</a></td>
+                </tr>
+                </tbody>
+            </table></div>
+
+            <p class="nota" th:unless="${servicos.isEmpty()}"
+               th:text="${total + ' serviço(s) · página ' + (paginaAtual + 1) + ' de ' + totalPaginas}"></p>
+            <div class="paginacao" th:if="${totalPaginas > 1}">
+                <a th:if="${paginaAtual > 0}" class="tabela-link" th:href="@{/admin/servicos(q=${q}, pagina=${paginaAtual - 1})}">‹ Anterior</a>
+                <a th:if="${paginaAtual + 1 < totalPaginas}" class="tabela-link" th:href="@{/admin/servicos(q=${q}, pagina=${paginaAtual + 1})}">Próxima ›</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>

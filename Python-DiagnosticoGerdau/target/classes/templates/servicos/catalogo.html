@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Catálogo')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('catalogo')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Catálogo de serviços', 'Todos os serviços cadastrados. Os novos entram como PENDENTE até serem aprovados.')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <form class="filtro" method="get" th:action="@{/catalogo}">
+                <input class="campo" type="text" name="q" th:value="${q}" placeholder="Filtrar pelo nome…" aria-label="Filtrar pelo nome" autocomplete="off">
+                <button type="submit" class="acao sec">Filtrar</button>
+                <a th:if="${!q.isEmpty()}" th:href="@{/catalogo}" class="tabela-link">Limpar</a>
+            </form>
+
+            <p class="dica" th:if="${servicos.isEmpty()}">Nenhum serviço encontrado.</p>
+
+            <table th:unless="${servicos.isEmpty()}">
+                <thead>
+                <tr><th>Código</th><th>Serviço</th><th>Categoria</th><th>Unidade de medida</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${servicos}">
+                    <td class="codigo" th:text="${s.codigoServico}">4096348</td>
+                    <td>
+                        <a class="tabela-link" th:href="@{/servicos/detalhes(codigo=${s.codigoServico})}"
+                           th:text="${s.nomeServico}">AJUDANTE</a>
+                    </td>
+                    <td th:text="${s.categoria != null ? s.categoria.categoriaNome : '—'}">CIVIL</td>
+                    <td th:text="${s.unidadeMedida != null ? s.unidadeMedida.codigo : '—'}">H</td>
+                    <td><span class="selo" th:classappend="${s.status.name().toLowerCase()}" th:text="${s.status}">APROVADO</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>

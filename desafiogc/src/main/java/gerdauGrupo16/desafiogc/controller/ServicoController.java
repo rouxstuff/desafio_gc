@@ -6,9 +6,11 @@ import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.service.ServicoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -21,20 +23,25 @@ public class ServicoController {
         this.service = service;
     }
 
+    // paginado: com milhares de serviços, devolver tudo de uma vez seria lento. Ex.: /api/servicos?pagina=0&tamanho=100
     @GetMapping
-    public List<Servico> listar() {
-        return service.listarTodos();
+    public List<Servico> listar(@RequestParam(defaultValue = "0") int pagina,
+                                @RequestParam(defaultValue = "100") int tamanho, Authentication auth) {
+        return service.listarPagina(null, pagina, tamanho, PerfilAcesso.ehAdmin(auth)).getContent();
     }
 
     @GetMapping("/categoriaNomeServico")
     public List<Servico> buscarCategoriaNome_ServicoNome(@RequestParam(required = false) String categoriaNome,
-                                                         @RequestParam(required = false) String nomeServico) {
-        return  service.buscarPorCategoriaNomeEServicoNome(categoriaNome, nomeServico);
+                                                         @RequestParam(required = false) String nomeServico,
+                                                         Authentication auth) {
+        return  service.buscarPorCategoriaNomeEServicoNome(categoriaNome, nomeServico, PerfilAcesso.ehAdmin(auth));
     }
 
     @GetMapping("/busca")
-    public List<Servico> buscar(@RequestParam String nome) {
-        return service.buscarPorNome(nome);
+    public List<Servico> buscar(@RequestParam String nome,
+                                @RequestParam(defaultValue = "0") int pagina,
+                                @RequestParam(defaultValue = "100") int tamanho, Authentication auth) {
+        return service.listarPagina(nome, pagina, tamanho, PerfilAcesso.ehAdmin(auth)).getContent();
     }
 
     // [NOVO, do Kaio] Régua de aderência. Ex.: GET /api/servicos/sugestoes?categoriaId=1&nome=Ajudante Geral
@@ -47,8 +54,8 @@ public class ServicoController {
 
     // [NOVO, do Kaio] Cria o serviço como PENDENTE. 201 | 400 validação | 404 categoria | 409 duplicado
     @PostMapping
-    public ResponseEntity<Servico> criarNovo(@Valid @RequestBody ServicoDTO dto) {
-        Servico criado = service.criarNovo(dto);
+    public ResponseEntity<Servico> criarNovo(@Valid @RequestBody ServicoDTO dto, Principal principal) {
+        Servico criado = service.criarNovo(dto, principal.getName());
         return ResponseEntity.created(URI.create("/api/servicos/" + criado.getCodigoServico())).body(criado);
     }
 }

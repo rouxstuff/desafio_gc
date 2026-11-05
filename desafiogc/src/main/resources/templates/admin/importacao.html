@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Importação')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('importacao')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Importação do catálogo saneado', 'Carregue o CSV limpo. Use sempre Simular primeiro: ele valida tudo e não grava nada.')}"></section>
+
+<main>
+<!-- Em upload (multipart) o token CSRF vai na URL do formulário: é o jeito garantido de o Spring Security enxergá-lo. -->
+    <div class="container">
+
+        <div class="cartao" th:if="${erro != null or sucesso != null}">
+            <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
+            <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
+        </div>
+
+        <div class="cartao" th:if="${relatorio != null}">
+            <h2 th:if="${relatorio.simulacao()}">Simulação de <span th:text="${relatorio.tipo()}"></span> (nada foi gravado)</h2>
+            <h2 th:if="${!relatorio.simulacao() and relatorio.aplicado()}">Importação de <span th:text="${relatorio.tipo()}"></span> concluída</h2>
+            <h2 th:if="${!relatorio.simulacao() and !relatorio.aplicado()}">Importação de <span th:text="${relatorio.tipo()}"></span> NÃO realizada (corrija os erros)</h2>
+
+            <ul class="resumo-ad">
+                <li>Linhas lidas: <b th:text="${relatorio.linhasLidas()}"></b></li>
+                <li><span th:text="${relatorio.simulacao() ? 'Seriam criados' : 'Criados'}"></span>: <b th:text="${relatorio.criados()}"></b></li>
+                <li>Já existiam (pulados): <b th:text="${relatorio.jaExistiam()}"></b></li>
+                <li>Repetidos no arquivo (ignorados): <b th:text="${relatorio.repetidas()}"></b></li>
+                <li th:if="${relatorio.categoriasCriadas() > 0}">Categorias novas: <b th:text="${relatorio.categoriasCriadas()}"></b></li>
+                <li th:if="${relatorio.fornecedoresCriados() > 0}">Fornecedores/compradores novos: <b th:text="${relatorio.fornecedoresCriados()}"></b></li>
+            </ul>
+
+            <p class="nota" th:each="a : ${relatorio.avisos()}" th:text="${a}"></p>
+
+            <div th:if="${relatorio.totalErros() > 0}">
+                <p class="erro"><b th:text="${relatorio.totalErros()}"></b> erro(s). Nada foi gravado.
+                    <span th:if="${relatorio.totalErros() > relatorio.erros().size()}"
+                          th:text="'Mostrando os primeiros ' + ${relatorio.erros().size()} + '.'"></span></p>
+                <ul class="resumo-ad">
+                    <li th:each="e : ${relatorio.erros()}" th:text="${e}"></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="cartao">
+            <h2>1. Serviços</h2>
+            <p class="nota">Colunas: <b>codigo_servico</b>, <b>nome_servico</b>, <b>categoria</b>; opcionais: unidade_medida,
+                descricao_servico, status (padrão APROVADO) e prefixo_categoria (só para criar uma categoria nova, ex.: LOG).
+                Aceita também os cabeçalhos da planilha original (Grupo de Serviço, Código do Serviço, Descrição do Item, Unidade medida).
+                Separador ; ou , · UTF-8 ou Excel.</p>
+            <form th:action="@{/admin/importacao/servicos(_csrf=${_csrf.token})}" method="post" enctype="multipart/form-data">
+                <input class="campo" type="file" name="arquivo" accept=".csv,.txt" required>
+                <label class="nota" style="display:block;margin:10px 0"><input type="checkbox" name="simular" value="true" checked> Só simular (não grava)</label>
+                <button type="submit" class="acao sec" style="width:auto;padding:10px 22px;margin-top:0">Enviar serviços</button>
+            </form>
+        </div>
+
+        <div class="cartao">
+            <h2>2. Vínculos (fornecedor/comprador × serviço)</h2>
+            <p class="nota">Importe depois dos serviços. Colunas: <b>codigo_fornecedor</b> e <b>codigo_servico</b>
+                (a planilha original serve). Fornecedores novos são criados pelo código. Só serviço APROVADO pode ser vinculado.</p>
+            <form th:action="@{/admin/importacao/vinculos(_csrf=${_csrf.token})}" method="post" enctype="multipart/form-data">
+                <input class="campo" type="file" name="arquivo" accept=".csv,.txt" required>
+                <label class="nota" style="display:block;margin:10px 0"><input type="checkbox" name="simular" value="true" checked> Só simular (não grava)</label>
+                <button type="submit" class="acao sec" style="width:auto;padding:10px 22px;margin-top:0">Enviar vínculos</button>
+            </form>
+        </div>
+
+        <div class="cartao">
+            <h2>Recarregar índice de duplicados</h2>
+            <p class="nota">O índice se atualiza sozinho ao criar, aprovar, reprovar ou importar por aqui. Use este botão se
+                alterar o banco por SQL ou editar o dicionário <code>normalizacao/regras.csv</code>.</p>
+            <form th:action="@{/admin/importacao/reindexar}" method="post">
+                <button type="submit" class="acao sec" style="width:auto;padding:10px 22px;margin-top:0">Recarregar índice</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>
