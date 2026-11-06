@@ -5,7 +5,7 @@
 </head>
 <body>
 <header th:replace="~{fragments/layout :: topo('usuarios')}"></header>
-<section th:replace="~{fragments/layout :: heroSimples('Usuários', 'Crie usuários (o login é o e-mail) e vincule cada fornecedor da base ao seu usuário. Cada fornecedor tem um único usuário.')}"></section>
+<section th:replace="~{fragments/layout :: heroSimples('Usuários', 'Aprove os pedidos de cadastro, crie usuários (o login é o e-mail) e vincule cada comprador da base ao seu usuário. Cada comprador tem um único usuário.')}"></section>
 
 <main>
     <div class="container">
@@ -13,8 +13,49 @@
             <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
             <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
 
+            <!-- ============================================================ solicitações de cadastro -->
+            <h2 id="solicitacoes">Solicitações de cadastro
+                <span class="selo pendente" th:if="${!solicitacoes.isEmpty()}" th:text="${#lists.size(solicitacoes)} + ' em análise'">1 em análise</span>
+            </h2>
+            <p class="dica" th:if="${solicitacoes.isEmpty()}">Nenhuma solicitação aguardando análise.</p>
+            <div class="tabela-rolagem">
+                <table th:unless="${solicitacoes.isEmpty()}">
+                    <thead>
+                    <tr><th>Nome</th><th>E-mail</th><th>Pediu</th><th>Data</th><th>Aprovar como</th><th>Reprovar</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s : ${solicitacoes}">
+                        <td th:text="${s.nome}">Maria Silva</td>
+                        <td th:text="${s.email}">maria@empresa.com</td>
+                        <td><span class="selo neutro" th:text="${s.perfilSolicitado}">COMPRADOR</span></td>
+                        <td th:text="${#temporals.format(s.solicitadoEm, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+                        <td class="acoes-linha">
+                            <form th:action="@{/admin/usuarios/solicitacoes/{id}/aprovar(id=${s.id})}" method="post">
+                                <select class="campo" name="perfil" aria-label="Perfil">
+                                    <option th:each="p : ${perfis}" th:value="${p.name()}"
+                                            th:text="${p.name() == 'ADMIN' ? 'Administrador' : 'Comprador'}"
+                                            th:selected="${p == s.perfilSolicitado}"></option>
+                                </select>
+                                <select class="campo" name="compradorId" aria-label="Comprador da base (opcional)">
+                                    <option value="">Ligar a um comprador da base (opcional)</option>
+                                    <option th:each="f : ${compradoresSemUsuario}" th:value="${f.id()}" th:text="${f.rotulo()}"></option>
+                                </select>
+                                <button class="acao" type="submit">Aprovar</button>
+                            </form>
+                        </td>
+                        <td class="acoes-linha">
+                            <form th:action="@{/admin/usuarios/solicitacoes/{id}/reprovar(id=${s.id})}" method="post">
+                                <input class="campo" type="text" name="motivo" maxlength="200" placeholder="Motivo da reprovação" required>
+                                <button class="acao sec" type="submit">Reprovar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <!-- ============================================================ novo usuário -->
-            <h2 id="novo">Novo usuário</h2>
+            <h2 id="novo" style="margin-top:36px">Novo usuário</h2>
             <form th:action="@{/admin/usuarios}" method="post" autocomplete="off">
                 <div class="duas-colunas">
                     <div>
@@ -33,16 +74,16 @@
                         <label class="rotulo" for="perfil">Perfil</label>
                         <select class="campo" id="perfil" name="perfil">
                             <option th:each="p : ${perfis}" th:value="${p.name()}"
-                                    th:text="${p.name() == 'ADMIN' ? 'Administrador' : (p.name() == 'FORNECEDOR' ? 'Fornecedor' : 'Comprador')}"
+                                    th:text="${p.name() == 'ADMIN' ? 'Administrador' : 'Comprador'}"
                                     th:selected="${formPerfil != null ? formPerfil == p.name() : p.name() == 'COMPRADOR'}"></option>
                         </select>
                     </div>
                     <div>
-                        <label class="rotulo" for="fornecedorId">Fornecedor <small>(só aparecem os que ainda não têm usuário)</small></label>
-                        <select class="campo" id="fornecedorId" name="fornecedorId">
-                            <option value="">Selecione…</option>
-                            <option th:each="f : ${fornecedoresSemUsuario}" th:value="${f.id()}" th:text="${f.rotulo()}"
-                                    th:selected="${formFornecedorId != null and formFornecedorId == f.id()}"></option>
+                        <label class="rotulo" for="compradorId">Comprador da base <small>(opcional; só aparecem os que ainda não têm usuário)</small></label>
+                        <select class="campo" id="compradorId" name="compradorId">
+                            <option value="">Nenhum</option>
+                            <option th:each="f : ${compradoresSemUsuario}" th:value="${f.id()}" th:text="${f.rotulo()}"
+                                    th:selected="${formCompradorId != null and formCompradorId == f.id()}"></option>
                         </select>
                     </div>
                 </div>
@@ -55,7 +96,7 @@
             <div class="tabela-rolagem">
                 <table th:unless="${usuarios.isEmpty()}">
                     <thead>
-                    <tr><th>E-mail</th><th>Perfil</th><th>Fornecedor</th><th>Vincular a outro fornecedor</th></tr>
+                    <tr><th>E-mail</th><th>Perfil</th><th>Comprador</th><th>Vincular a outro comprador</th></tr>
                     </thead>
                     <tbody>
                     <tr th:each="u : ${usuarios}">
@@ -64,46 +105,46 @@
                             <span class="selo neutro" th:each="r : ${u.roles}" th:text="${r}">COMPRADOR</span>
                         </td>
                         <td>
-                            <span th:if="${u.fornecedor != null}"
-                                  th:text="${u.fornecedor.codigoFornecedor + (u.fornecedor.nomeFornecedor != null and !u.fornecedor.nomeFornecedor.isBlank() ? ' - ' + u.fornecedor.nomeFornecedor : '')}">200982674</span>
-                            <span th:if="${u.fornecedor == null}">—</span>
+                            <span th:if="${u.comprador != null}"
+                                  th:text="${u.comprador.codigoComprador + (u.comprador.nomeComprador != null and !u.comprador.nomeComprador.isBlank() ? ' - ' + u.comprador.nomeComprador : '')}">200982674</span>
+                            <span th:if="${u.comprador == null}">—</span>
                         </td>
                         <td class="acoes-linha">
-                            <form th:if="${u.roles.contains(perfilFornecedor)}"
-                                  th:action="@{/admin/usuarios/{id}/fornecedor(id=${u.id})}" method="post">
-                                <select class="campo" name="fornecedorId" aria-label="Fornecedor">
+                            <form th:if="${u.roles.contains(perfilComprador)}"
+                                  th:action="@{/admin/usuarios/{id}/comprador(id=${u.id})}" method="post">
+                                <select class="campo" name="compradorId" aria-label="Comprador">
                                     <option value="">Selecione…</option>
-                                    <!-- só fornecedores livres (sem usuário) e o fornecedor atual deste usuário -->
-                                    <option th:each="f : ${fornecedores}"
-                                            th:if="${f.usuarios() == 0 or (u.fornecedor != null and u.fornecedor.id == f.id())}"
+                                    <!-- só compradores livres (sem usuário) e o comprador atual deste usuário -->
+                                    <option th:each="f : ${compradores}"
+                                            th:if="${f.usuarios() == 0 or (u.comprador != null and u.comprador.id == f.id())}"
                                             th:value="${f.id()}" th:text="${f.rotulo()}"
-                                            th:selected="${u.fornecedor != null and u.fornecedor.id == f.id()}"></option>
+                                            th:selected="${u.comprador != null and u.comprador.id == f.id()}"></option>
                                 </select>
                                 <button class="acao sec" type="submit"
-                                        th:text="${u.fornecedor == null ? 'Vincular' : 'Trocar'}">Vincular</button>
+                                        th:text="${u.comprador == null ? 'Vincular' : 'Trocar'}">Vincular</button>
                             </form>
-                            <span th:unless="${u.roles.contains(perfilFornecedor)}">Só para perfil Fornecedor</span>
+                            <span th:unless="${u.roles.contains(perfilComprador)}">Só para perfil Comprador</span>
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- ============================================================ fornecedores sem usuário -->
-            <h2 style="margin-top:36px">Fornecedores sem usuário</h2>
+            <!-- ============================================================ compradores sem usuário -->
+            <h2 style="margin-top:36px">Compradores sem usuário</h2>
             <p>
-                <strong th:text="${#lists.size(fornecedoresSemUsuario)}">111</strong>
-                de <strong th:text="${#lists.size(fornecedores)}">111</strong>
-                fornecedores ainda não têm usuário.
+                <strong th:text="${#lists.size(compradoresSemUsuario)}">111</strong>
+                de <strong th:text="${#lists.size(compradores)}">111</strong>
+                compradores ainda não têm usuário.
             </p>
             <div class="tabela-rolagem">
-                <table th:unless="${fornecedoresSemUsuario.isEmpty()}">
+                <table th:unless="${compradoresSemUsuario.isEmpty()}">
                     <thead><tr><th>Código</th><th>Nome</th><th>Ação</th></tr></thead>
                     <tbody>
-                    <tr th:each="f : ${fornecedoresSemUsuario}">
+                    <tr th:each="f : ${compradoresSemUsuario}">
                         <td class="codigo" th:text="${f.codigo()}">200982674</td>
                         <td th:text="${f.nome() != null and !f.nome().isBlank() ? f.nome() : '—'}">—</td>
-                        <td><a class="tabela-link" th:href="@{/admin/usuarios(fornecedorId=${f.id()})} + '#novo'">Criar usuário</a></td>
+                        <td><a class="tabela-link" th:href="@{/admin/usuarios(compradorId=${f.id()})} + '#novo'">Criar usuário</a></td>
                     </tr>
                     </tbody>
                 </table>
@@ -115,14 +156,13 @@
 <footer th:replace="~{fragments/layout :: rodape}"></footer>
 
 <script>
-    // o fornecedor só vale (e é obrigatório) para o perfil Fornecedor
+    // o comprador da base só vale (e é opcional) para o perfil Comprador
     (function () {
         var perfil = document.getElementById('perfil');
-        var fornecedor = document.getElementById('fornecedorId');
+        var comprador = document.getElementById('compradorId');
         function ajustar() {
-            var ehFornecedor = perfil.value === 'FORNECEDOR';
-            fornecedor.disabled = !ehFornecedor;
-            fornecedor.required = ehFornecedor;
+            var ehComprador = perfil.value === 'COMPRADOR';
+            comprador.disabled = !ehComprador;
         }
         perfil.addEventListener('change', ajustar);
         ajustar();

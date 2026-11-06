@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Contratações')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('contratacoes')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Contratações', 'Ligue compradores a serviços aprovados, pesquise um serviço e veja quem o contratou e quando. As confirmações dos compradores também criam o vínculo.')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <p class="msg msg-ok" th:if="${sucesso}" th:text="${sucesso}"></p>
+            <p class="msg msg-erro" th:if="${erro}" th:text="${erro}"></p>
+
+            <h2>Nova contratação</h2>
+            <form th:action="@{/contratacoes}" method="post">
+                <div class="duas-colunas">
+                    <div>
+                        <label class="rotulo" for="compradorId">Comprador</label>
+                        <select class="campo" id="compradorId" name="compradorId">
+                            <option value="">Selecione…</option>
+                            <option th:each="f : ${compradores}" th:value="${f.id()}" th:text="${f.rotulo()}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="rotulo" for="codigoServico">Serviço <small>(só aprovados)</small></label>
+                        <select class="campo" id="codigoServico" name="codigoServico">
+                            <option value="">Selecione…</option>
+                            <option th:each="s : ${servicosVinculaveis}" th:value="${s.codigoServico}"
+                                    th:text="${s.codigoServico + ' - ' + s.nomeServico}"></option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="acao sec" style="max-width:220px">Vincular comprador</button>
+            </form>
+
+            <h2 style="margin-top:32px">Compradores por serviço</h2>
+
+            <!-- [BUSCA + LISTA] a barra de pesquisa filtra a lista suspensa (só serviços aprovados, até 50 resultados).
+                 Sem pesquisa, a lista mostra todos os serviços aprovados. Escolher um serviço mostra os compradores. -->
+            <form th:action="@{/contratacoes}" method="get" role="search">
+                <div class="filtro" style="align-items:flex-end;margin-bottom:12px">
+                    <div style="flex:1">
+                        <label class="rotulo" for="busca">Pesquisar serviço <small>(nome ou código)</small></label>
+                        <input class="campo" type="search" id="busca" name="busca" th:value="${busca}"
+                               placeholder="Ex.: soldador, CIV-4057137 ou 4057137" autocomplete="off">
+                    </div>
+                    <button type="submit" class="acao sec">Buscar</button>
+                    <a th:if="${busca != '' or servicoFiltro != null}" th:href="@{/contratacoes}" class="acao-link"
+                       style="padding:13px 6px">Limpar</a>
+                </div>
+
+                <label class="rotulo" for="filtroServico">Serviços
+                    <small th:if="${resultadosBusca != null}">(filtrados pela pesquisa)</small>
+                </label>
+                <select class="campo" id="filtroServico" name="servicoFiltro" onchange="this.form.submit()">
+                    <option value="">—</option>
+                    <option th:each="s : ${resultadosBusca != null ? resultadosBusca : servicosVinculaveis}"
+                            th:value="${s.codigoServico}"
+                            th:text="${s.codigoServico + ' - ' + s.nomeServico}"
+                            th:selected="${servicoFiltro == s.codigoServico}"></option>
+                </select>
+            </form>
+
+            <p th:if="${resultadosBusca != null}" style="margin-top:10px">
+                <span th:if="${#lists.isEmpty(resultadosBusca)}">
+                    Nenhum serviço aprovado encontrado para "<strong th:text="${busca}"></strong>".
+                </span>
+                <span th:unless="${#lists.isEmpty(resultadosBusca)}">
+                    <strong th:text="${#lists.size(resultadosBusca)}"></strong>
+                    <span th:text="${#lists.size(resultadosBusca) == 1 ? 'serviço encontrado' : 'serviços encontrados'}"></span>
+                    <small th:if="${#lists.size(resultadosBusca) >= 50}">(mostrando os 50 primeiros: refine a pesquisa)</small>
+                </span>
+            </p>
+
+            <h3 th:if="${servicoSelecionado != null}" style="margin-top:22px">
+                Compradores de <span th:text="${servicoSelecionado}"></span>
+            </h3>
+            <div class="tabela-rolagem" th:if="${compradoresVinculados != null and !#lists.isEmpty(compradoresVinculados)}">
+                <table>
+                    <thead>
+                    <tr><th>Comprador</th><th>Vinculado em</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="v : ${compradoresVinculados}">
+                        <td th:text="${v.rotulo()}">Comprador 1</td>
+                        <td th:text="${v.vinculadoEm() != null ? #temporals.format(v.vinculadoEm(), 'dd/MM/yyyy HH:mm') : 'Importação inicial'}">01/01/2026 10:00</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p th:if="${compradoresVinculados != null and #lists.isEmpty(compradoresVinculados)}">
+                Nenhum comprador vinculado a este serviço.
+            </p>
+
+
+            <h2 style="margin-top:32px">Confirmações dos usuários</h2>
+            <p class="dica" th:if="${contratacoes.isEmpty()}">Nenhum serviço contratado ainda.</p>
+            <div class="tabela-rolagem" th:unless="${contratacoes.isEmpty()}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Data</th><th>Usuário</th><th>Código</th><th>Serviço</th>
+                        <th>Quantidade</th><th>Adicionais</th><th>Observação</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${contratacoes}">
+                        <td th:text="${#temporals.format(c.criadaEm, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+                        <td th:text="${c.usuarioEmail}">maria@empresa.com</td>
+                        <td class="codigo" th:text="${c.codigoServico}">CIV-4057137</td>
+                        <td th:text="${c.nomeServico}">AJUDANTE</td>
+                        <td th:text="${c.quantidadeFormatada}">10 H</td>
+                        <td th:text="${c.adicionais != null ? c.adicionais : '—'}">—</td>
+                        <td th:text="${c.observacao != null ? c.observacao : '—'}">—</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>

@@ -2,7 +2,7 @@ package gerdauGrupo16.desafiogc.controller;
 
 /*
  * ARQUIVO: ConsultaPaginaController.java
- * TIPO: controller de telas (@Controller). É o fluxo principal de comprador e fornecedor.
+ * TIPO: controller de telas (@Controller). É o fluxo principal do comprador.
  * FUNÇÃO: consulta de serviços, confirmação de um serviço existente e solicitação de serviço novo. Regra
  *   geral: procure primeiro, crie só se não existir. O administrador não contrata nem solicita; quando cai
  *   aqui é redirecionado para /admin/servicos.
@@ -21,8 +21,8 @@ package gerdauGrupo16.desafiogc.controller;
  * - buscarUnidade(id): acha a unidade de medida pelo id (ou null).
  * - paginaNaoEncontrado(nome, model): tela Serviço não encontrado, com as sugestões parecidas.
  * - confirmar(codigo, ids, unidadeMedidaId, quantidade, observacao, digitado, auth, model): valida a
- *   quantidade conforme a unidade e a observação e mostra o resumo na tela de conclusão. Não grava
- *   contratação.
+ *   quantidade conforme a unidade e a observação e mostra o resumo na tela de conclusão. Quando o serviço
+ *   está APROVADO, grava a contratação ligada ao usuário (ContratacaoService); ela aparece em Meus serviços.
  * - novo(nome, model): abre o formulário de novo serviço com o nome já padronizado.
  * - solicitar(nomeServico, categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, quantidade,
  *   observacao, principal, model): valida os campos e cria o serviço PENDENTE (ServicoService.criarNovo).
@@ -39,6 +39,7 @@ import gerdauGrupo16.desafiogc.model.unitys.UnidadeMedida;
 import gerdauGrupo16.desafiogc.service.QuantidadeServico;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.service.CategoriaService;
+import gerdauGrupo16.desafiogc.service.ContratacaoService;
 import gerdauGrupo16.desafiogc.service.ServicoService;
 import gerdauGrupo16.desafiogc.service.TermosBusca;
 import gerdauGrupo16.desafiogc.service.UnidadeCustoService;
@@ -65,13 +66,16 @@ public class ConsultaPaginaController {
 
     private final CategoriaService categoriaService;
     private final UnidadeMedidaService unidadeMedidaService;
+    private final ContratacaoService contratacaoService;
 
     public ConsultaPaginaController(ServicoService service, UnidadeCustoService adicionaisService,
-                                    CategoriaService categoriaService, UnidadeMedidaService unidadeMedidaService) {
+                                    CategoriaService categoriaService, UnidadeMedidaService unidadeMedidaService,
+                                    ContratacaoService contratacaoService) {
         this.service = service;
         this.adicionaisService = adicionaisService;
         this.categoriaService = categoriaService;
         this.unidadeMedidaService = unidadeMedidaService;
+        this.contratacaoService = contratacaoService;
     }
 
     @GetMapping("/")
@@ -218,6 +222,13 @@ public class ConsultaPaginaController {
             nomes.add(adicional.getMaoDeObra());
         }
 
+        boolean registrado = false;
+        if (contrato) {
+            contratacaoService.registrar(auth.getName(), servico, unidade, qtd.valor(), nomes, obs);
+            registrado = true;
+        }
+        model.addAttribute("registrado", registrado);
+
         model.addAttribute("nomeServico", "");
         model.addAttribute("titulo", "Serviço confirmado");
         model.addAttribute("servicoNome", achado.get().getNomeServico());
@@ -282,7 +293,7 @@ public class ConsultaPaginaController {
             model.addAttribute("nomeServico", "");
             model.addAttribute("titulo", "Serviço solicitado");
             model.addAttribute("servicoNome", criado.getCodigoServico() + " - " + criado.getNomeServico());
-            model.addAttribute("mensagem", "Cadastrado com status PENDENTE. Só depois de aprovado pelo administrador ele poderá ser vinculado a fornecedores.");
+            model.addAttribute("mensagem", "Cadastrado com status PENDENTE. Só depois de aprovado pelo administrador ele poderá ser vinculado a compradores.");
             model.addAttribute("medida", criado.getUnidadeMedida() == null ? null
                     : criado.getUnidadeMedida().getCodigo() + " - " + criado.getUnidadeMedida().getDescricao());
             model.addAttribute("itens", criado.getUnidadeCusto() == null ? List.of()

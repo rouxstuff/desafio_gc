@@ -4,8 +4,8 @@ package gerdauGrupo16.desafiogc.security;
  * ARQUIVO: SecurityConfiguration.java
  * TIPO: classe de configuração (@Configuration, @EnableWebSecurity, @EnableMethodSecurity).
  * FUNÇÃO: define quem pode acessar o quê e como é o login. As regras de URL são avaliadas na ordem e vale a
- *   primeira que casar: arquivos estáticos liberados; /admin e /vinculos só ADMIN; /fornecedor só ADMIN;
- *   POST /api/servicos e /servicos/novo só COMPRADOR e FORNECEDOR (o administrador não solicita serviço); o
+ *   primeira que casar: arquivos estáticos e a tela pública /cadastro liberados; /admin e POST /contratacoes só ADMIN; /comprador só ADMIN;
+ *   POST /api/servicos e /servicos/novo só COMPRADOR (o administrador não solicita serviço); o
  *   resto exige login. Login por formulário em /login e logout em /logout. O CSRF fica ligado nas páginas e
  *   desligado em /api para testar no Swagger (remover antes de produção).
  * MÉTODOS:
@@ -34,13 +34,14 @@ public class SecurityConfiguration {
 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/img/**").permitAll()
+                .requestMatchers("/cadastro").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/vinculos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/contratacoes").hasRole("ADMIN")
 
-                .requestMatchers("/fornecedor/**").hasRole("ADMIN")
+                .requestMatchers("/comprador/**").hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.POST, "/api/servicos").hasAnyRole("COMPRADOR", "FORNECEDOR")
-                .requestMatchers("/servicos/novo").hasAnyRole("COMPRADOR", "FORNECEDOR")
+                .requestMatchers(HttpMethod.POST, "/api/servicos").hasRole("COMPRADOR")
+                .requestMatchers("/servicos/novo").hasRole("COMPRADOR")
                 .anyRequest().authenticated())
             .formLogin(form -> form
                 .loginPage("/login")

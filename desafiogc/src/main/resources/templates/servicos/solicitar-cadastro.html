@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Solicitar cadastro')}"></head>
+
+<body>
+<header th:replace="~{fragments/layout :: topo('Cadastro')}"></header>
+<main class="login-pagina">
+    <div class="login-cartao">
+        <span class="login-logo">GERDAU</span>
+        <h1>Solicitar cadastro</h1>
+        <p class="login-sub">Preencha os dados abaixo. Seu pedido será analisado por um administrador e você só poderá entrar depois da aprovação.</p>
+
+        <p class="alerta" th:if="${erro}" th:text="${erro}"></p>
+
+        <form method="post" th:action="@{/cadastro}" autocomplete="off">
+            <div class="login-campo">
+                <label class="rotulo" for="nome">Nome</label>
+                <input class="campo" type="text" id="nome" name="nome" maxlength="100" required autofocus
+                       th:value="${formNome}" placeholder="Seu nome completo">
+            </div>
+            <div class="login-campo">
+                <label class="rotulo" for="email">E-mail (será o seu login)</label>
+                <input class="campo" type="email" id="email" name="email" maxlength="254" required
+                       th:value="${formEmail}" placeholder="nome@empresa.com">
+            </div>
+                        <div class="login-campo">
+                <label class="rotulo" for="senha">Senha <small>(mínimo de 8 caracteres)</small></label>
+                <input class="campo" type="password" id="senha" name="senha" minlength="8" maxlength="72" required
+                       autocomplete="new-password">
+            </div>
+            <div class="login-campo">
+                <label class="rotulo" for="confirmarSenha">Repita a senha</label>
+                <input class="campo" type="password" id="confirmarSenha" name="confirmarSenha" minlength="8" maxlength="72" required
+                       autocomplete="new-password">
+            </div>
+            <button type="submit" class="acao">Enviar solicitação</button>
+        </form>
+
+        <p class="login-ajuda">Já tem acesso? <a th:href="@{/login}">Entrar</a></p>
+    </div>
+</main>
+</body>
+</html>

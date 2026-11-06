@@ -5,8 +5,8 @@ package gerdauGrupo16.desafiogc.model.entity;
  * TIPO: entidade JPA (tabela usuarios). Getters e setters pelo Lombok.
  * FUNÇÃO: pessoa que entra no sistema. O login é o e-mail, sempre em minúsculas; a coluna se chama
  *   usuario_nome por compatibilidade com bancos antigos. A senha é guardada em BCrypt.
- * CAMPOS: id; email (único); senha; roles (perfis, tabela usuario_roles); fornecedor (só para perfil
- *   FORNECEDOR; único, ou seja, um usuário por fornecedor).
+ * CAMPOS: id; email (único); senha; roles (perfis, tabela usuario_roles); comprador (só para perfil
+ *   COMPRADOR; único, ou seja, um usuário por comprador).
  */
 
 import gerdauGrupo16.desafiogc.model.enumeration.Roles;
@@ -42,5 +42,5 @@ public class Usuario {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fornecedor_id", nullable = true, unique = true)
-    private Fornecedor fornecedor;
+    private Comprador comprador;
 }

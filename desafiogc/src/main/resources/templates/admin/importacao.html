@@ -27,7 +27,7 @@
                 <li>Já existiam (pulados): <b th:text="${relatorio.jaExistiam()}"></b></li>
                 <li>Repetidos no arquivo (ignorados): <b th:text="${relatorio.repetidas()}"></b></li>
                 <li th:if="${relatorio.categoriasCriadas() > 0}">Categorias novas: <b th:text="${relatorio.categoriasCriadas()}"></b></li>
-                <li th:if="${relatorio.fornecedoresCriados() > 0}">Fornecedores/compradores novos: <b th:text="${relatorio.fornecedoresCriados()}"></b></li>
+                <li th:if="${relatorio.compradoresCriados() > 0}">Compradores/compradores novos: <b th:text="${relatorio.compradoresCriados()}"></b></li>
             </ul>
 
             <p class="nota" th:each="a : ${relatorio.avisos()}" th:text="${a}"></p>
@@ -56,9 +56,9 @@
         </div>
 
         <div class="cartao">
-            <h2>2. Vínculos (fornecedor/comprador × serviço)</h2>
-            <p class="nota">Importe depois dos serviços. Colunas: <b>codigo_fornecedor</b> e <b>codigo_servico</b>
-                (a planilha original serve). Fornecedores novos são criados pelo código. Só serviço APROVADO pode ser vinculado.</p>
+            <h2>2. Vínculos (comprador × serviço)</h2>
+            <p class="nota">Importe depois dos serviços. Colunas: <b>codigo_comprador</b> e <b>codigo_servico</b>
+                (a planilha original serve). Compradores novos são criados pelo código. Só serviço APROVADO pode ser vinculado.</p>
             <form th:action="@{/admin/importacao/vinculos(_csrf=${_csrf.token})}" method="post" enctype="multipart/form-data">
                 <input class="campo" type="file" name="arquivo" accept=".csv,.txt" required>
                 <label class="nota" style="display:block;margin:10px 0"><input type="checkbox" name="simular" value="true" checked> Só simular (não grava)</label>

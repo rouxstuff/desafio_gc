@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: desafiogc
+      POSTGRES_USER: gerdau
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no arquivo .env}
+    volumes:
+      - pgdata:/var/lib/postgresql          # dados do banco (persistem)
+      - ./db:/docker-entrypoint-initdb.d:ro # backup.dump + script de restore
+    # Descomente para conectar no banco de fora (DBeaver, psql...):
+    # ports:
+    #   - "5433:5432"
+    healthcheck:
+      # -h 127.0.0.1 de propósito: durante o restore o Postgres só aceita
+      # conexão por socket; por TCP só responde quando o restore terminou.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U gerdau -d desafiogc"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    restart: unless-stopped
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/desafiogc
+      DB_USER: gerdau
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_SHOW_SQL: "false"   # não despeja cada SQL no log do container
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

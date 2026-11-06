@@ -3,7 +3,7 @@ package gerdauGrupo16.desafiogc.controller;
 /*
  * ARQUIVO: AdminImportacaoController.java
  * TIPO: controller de telas (@Controller), rota /admin/importacao, restrito ao ADMIN.
- * FUNÇÃO: tela do administrador para importar o catálogo saneado e os vínculos fornecedor x serviço por
+ * FUNÇÃO: tela do administrador para importar o catálogo saneado e os vínculos comprador x serviço por
  *   arquivo CSV, e para recarregar o índice de busca em memória. A regra da importação fica em
  *   ImportacaoService; aqui só se recebe o arquivo e se devolve o relatório para a tela.
  * MÉTODOS:

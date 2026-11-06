@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: cabecalho('Serviços contratados')}">
+    <meta charset="UTF-8">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: topo('contratacoes')}"></header>
+<section th:replace="~{fragments/layout :: heroSimples('Serviços contratados', 'Os serviços aprovados do catálogo que você confirmou, com data, quantidade, adicionais e observação.')}"></section>
+
+<main>
+    <div class="container">
+        <div class="cartao">
+            <p class="dica" th:if="${contratacoes.isEmpty()}">Nenhum serviço contratado ainda. Faça uma consulta e confirme um serviço aprovado.</p>
+
+            <div class="tabela-rolagem">
+                <table th:unless="${contratacoes.isEmpty()}">
+                    <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Código</th>
+                        <th>Serviço</th>
+                        <th>Quantidade</th>
+                        <th>Adicionais</th>
+                        <th>Observação</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${contratacoes}">
+                        <td th:text="${#temporals.format(c.criadaEm, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+                        <td class="codigo" th:text="${c.codigoServico}">CIV-4057137</td>
+                        <td th:text="${c.nomeServico}">AJUDANTE</td>
+                        <td th:text="${c.quantidadeFormatada}">10 H</td>
+                        <td th:text="${c.adicionais != null ? c.adicionais : '—'}">—</td>
+                        <td th:text="${c.observacao != null ? c.observacao : '—'}">—</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: rodape}"></footer>
+</body>
+</html>

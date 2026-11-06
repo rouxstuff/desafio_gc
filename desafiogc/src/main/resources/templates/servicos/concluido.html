@@ -19,6 +19,7 @@
             <h2 th:text="${titulo}">Serviço confirmado</h2>
             <p style="font-size:1.4rem;font-weight:700;margin:0 0 8px" th:text="${servicoNome}"></p>
             <p class="nota" th:text="${mensagem}">Mensagem</p>
+            <p class="msg msg-ok" th:if="${registrado}">Contratação registrada. Veja em <a th:href="@{/contratacoes}">Meus serviços</a>.</p>
 
             <p class="nota" th:if="${medida != null}">Unidade de medida: <b th:text="${medida}">H - Hora</b></p>
 

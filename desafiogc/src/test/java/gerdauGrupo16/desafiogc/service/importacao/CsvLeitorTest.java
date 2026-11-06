@@ -23,7 +23,7 @@ class CsvLeitorTest {
 
     @Test
     void normalizaCabecalhosDaPlanilhaOriginal() {
-        String csv = "Grupo de Serviço;Código do Fornecedor;Código do Serviço;Descrição do Item;Unidade medida\n"
+        String csv = "Grupo de Serviço;Código do Comprador;Código do Serviço;Descrição do Item;Unidade medida\n"
                 + "Civil;200982674;4033776;SV-EQUIPE TELHADO;SV\n";
         var r = CsvLeitor.ler(csv.getBytes(StandardCharsets.UTF_8));
         assertEquals("codigo_do_servico", r.cabecalho().get(2));

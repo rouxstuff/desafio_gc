@@ -257,7 +257,7 @@ tbody tr:hover { background: var(--azul-claro); }
 .campo { width: 100%; padding: 13px 16px; font-size: 1rem; border: 2px solid var(--cinza-borda); border-radius: var(--raio); }
 .campo:focus { outline: none; border-color: var(--azul); }
 
-/* ================= [NOVO] estilos das telas Catálogo, Fornecedores e do cadastro completo ================= */
+/* ================= [NOVO] estilos das telas Catálogo, Compradores e do cadastro completo ================= */
 select.campo { background: var(--branco); }
 textarea.campo { resize: vertical; font-family: inherit; }
 .rotulo small { font-weight: 400; color: var(--cinza-medio); }

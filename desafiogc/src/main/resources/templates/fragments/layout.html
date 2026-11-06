@@ -18,13 +18,14 @@
             <a th:classappend="${ativa == 'consulta'} ? 'ativo'" th:href="@{/servicos}">Consulta</a>
             <!-- o administrador não vê o Catálogo: usa a aba Serviços, que lista o mesmo e permite alterar -->
             <a th:unless="${ehAdmin}" th:classappend="${ativa == 'catalogo'} ? 'ativo'" th:href="@{/catalogo}">Catálogo</a>
-            <!-- só o administrador vê Fornecedores e Aprovações -->
-            <a th:if="${ehAdmin}" th:classappend="${ativa == 'vinculos'} ? 'ativo'" th:href="@{/vinculos}">Fornecedores</a>
+            <a th:unless="${ehAdmin}" th:classappend="${ativa == 'contratacoes'} ? 'ativo'" th:href="@{/contratacoes}">Meus serviços</a>
+            <!-- só o administrador vê Serviços, Aprovações, Importação, Contratações e Usuários -->
             <a th:if="${ehAdmin}" th:classappend="${ativa == 'servicos'} ? 'ativo'" th:href="@{/admin/servicos}">Serviços</a>
             <a th:if="${ehAdmin}" th:classappend="${ativa == 'admin'} ? 'ativo'" th:href="@{/admin/solicitacoes}">Aprovações</a>
             <a th:if="${ehAdmin}" th:classappend="${ativa == 'importacao'} ? 'ativo'" th:href="@{/admin/importacao}">Importação</a>
+            <a th:if="${ehAdmin}" th:classappend="${ativa == 'contratacoes'} ? 'ativo'" th:href="@{/contratacoes}">Contratações</a>
             <a th:if="${ehAdmin}" th:classappend="${ativa == 'usuarios'} ? 'ativo'" th:href="@{/admin/usuarios}">Usuários</a>
-            <!-- só quem solicita (comprador/fornecedor) vê o botão -->
+            <!-- só quem solicita (comprador) vê o botão -->
             <a th:unless="${ehAdmin}" class="btn-nav" th:href="@{/servicos/novo}">Solicitar serviço</a>
             <!-- logout precisa ser POST (com CSRF ligado, link GET não encerra a sessão) -->
             <form class="form-sair" th:action="@{/logout}" method="post">
@@ -57,7 +58,7 @@
     </div>
 </section>
 
-<!-- FRAGMENTO 6 [NOVO]: faixa azul sem busca, para Catálogo e Fornecedores -->
+<!-- FRAGMENTO 6 [NOVO]: faixa azul sem busca, para Catálogo e Contratações -->
 <section class="hero" th:fragment="heroSimples(titulo, texto)">
     <div class="container">
         <h1 th:text="${titulo}">Título</h1>

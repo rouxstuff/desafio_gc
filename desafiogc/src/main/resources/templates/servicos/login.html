@@ -12,6 +12,7 @@
 
         <!-- aparece quando a URL for /login?error -->
         <p class="alerta" th:if="${param.error}">E-mail ou senha incorretos. Tente de novo.</p>
+        <p class="msg msg-ok" th:if="${param.cadastroEnviado}">Solicitação enviada! Um administrador vai analisar o seu cadastro. Você poderá entrar depois da aprovação.</p>
 
         <form method="post" th:action="@{/login}">
             <div class="login-campo">
@@ -30,6 +31,7 @@
             <button type="submit" class="acao">Entrar</button>
         </form>
 
+        <p class="login-ajuda">Ainda não tem acesso? <a th:href="@{/cadastro}">Solicitar cadastro</a></p>
         <p class="login-ajuda">Problemas para acessar? Fale com o administrador do sistema.</p>
     </div>
 </main>

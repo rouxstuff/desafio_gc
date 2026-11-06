@@ -6,8 +6,8 @@ package gerdauGrupo16.desafiogc.repository;
  * MÉTODOS:
  * - findByEmailIgnoreCase(email): acha o usuário pelo e-mail, sem diferenciar maiúsculas (usado no login).
  * - existsByEmailIgnoreCase(email): diz se o e-mail já está em uso.
- * - findByFornecedor_Id(fornecedorId): usuário ligado a um fornecedor (há no máximo um).
- * - listarComFornecedor(): todos os usuários por e-mail, já com o fornecedor carregado (evita uma consulta
+ * - findByComprador_Id(compradorId): usuário ligado a um comprador (há no máximo um).
+ * - listarComComprador(): todos os usuários por e-mail, já com o comprador carregado (evita uma consulta
  *   por usuário).
  */
 
@@ -24,8 +24,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     boolean existsByEmailIgnoreCase(String email);
 
-    Optional<Usuario> findByFornecedor_Id(Long fornecedorId);
+    Optional<Usuario> findByComprador_Id(Long compradorId);
 
-    @Query("select u from Usuario u left join fetch u.fornecedor order by u.email")
-    List<Usuario> listarComFornecedor();
+    @Query("select u from Usuario u left join fetch u.comprador order by u.email")
+    List<Usuario> listarComComprador();
 }
