@@ -1,5 +1,13 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: UnidadeMedidaController.java
+ * TIPO: controller REST (@RestController), rota /unidades-medida.
+ * FUNÇÃO: API de consulta das unidades de medida oficiais (H, M, M2, KG, SV, MON, ST...).
+ * MÉTODOS:
+ * - listar(): GET /unidades-medida. Devolve id e descrição de todas, em ordem alfabética.
+ */
+
 import gerdauGrupo16.desafiogc.controller.dto.UnidadeCustoDTO;
 import gerdauGrupo16.desafiogc.controller.dto.UnidadeMedidaDTO;
 import gerdauGrupo16.desafiogc.service.UnidadeCustoService;

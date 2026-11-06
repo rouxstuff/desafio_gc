@@ -1,5 +1,14 @@
 package gerdauGrupo16.desafiogc.model.entity;
 
+/*
+ * ARQUIVO: Usuario.java
+ * TIPO: entidade JPA (tabela usuarios). Getters e setters pelo Lombok.
+ * FUNÇÃO: pessoa que entra no sistema. O login é o e-mail, sempre em minúsculas; a coluna se chama
+ *   usuario_nome por compatibilidade com bancos antigos. A senha é guardada em BCrypt.
+ * CAMPOS: id; email (único); senha; roles (perfis, tabela usuario_roles); fornecedor (só para perfil
+ *   FORNECEDOR; único, ou seja, um usuário por fornecedor).
+ */
+
 import gerdauGrupo16.desafiogc.model.enumeration.Roles;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,8 +28,6 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // O login agora é o E-MAIL (sempre em minúsculas). A coluna continua "usuario_nome" de propósito: assim bancos que
-    // já existem não precisam de migração de esquema (o sistema converte os logins antigos na subida; ver CargaInicialUnidades).
     @Column(name = "usuario_nome", nullable = false, unique = true)
     private String email;
 
@@ -33,8 +40,6 @@ public class Usuario {
     @Column(name = "role")
     private Set<Roles> roles = new HashSet<>();
 
-    // Fornecedor (já existente na base saneada) a que este usuário pertence. Só faz sentido para o perfil FORNECEDOR.
-    // unique = true: UM usuário por fornecedor (o banco também garante; vários usuários sem fornecedor continuam valendo).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fornecedor_id", nullable = true, unique = true)
     private Fornecedor fornecedor;

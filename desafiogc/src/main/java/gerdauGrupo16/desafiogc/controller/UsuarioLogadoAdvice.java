@@ -1,10 +1,20 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: UsuarioLogadoAdvice.java
+ * TIPO: @ControllerAdvice. Atua sobre todos os controllers de tela.
+ * FUNÇÃO: coloca em todo model duas informações que o menu das páginas precisa, sem cada controller repetir
+ *   isso.
+ * MÉTODOS:
+ * - usuarioLogado(auth): atributo usuarioLogado, o e-mail de quem está logado (ou null).
+ * - ehAdmin(auth): atributo ehAdmin, verdadeiro para o administrador; o menu usa para mostrar as abas do
+ *   administrador.
+ */
+
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-/** Entrega "usuarioLogado" e "ehAdmin" prontos para todas as páginas (usado no menu do layout). */
 @ControllerAdvice
 public class UsuarioLogadoAdvice {
 

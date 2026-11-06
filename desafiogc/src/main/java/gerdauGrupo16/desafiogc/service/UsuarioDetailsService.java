@@ -1,5 +1,15 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: UsuarioDetailsService.java
+ * TIPO: classe de serviço (@Service) que implementa UserDetailsService do Spring Security.
+ * FUNÇÃO: ensina o Spring Security a buscar o usuário no banco durante o login. O nome digitado no
+ *   formulário é o e-mail.
+ * MÉTODOS:
+ * - loadUserByUsername(email): normaliza o e-mail, procura o usuário, e devolve login, senha em BCrypt e
+ *   perfis. Se não existir lança UsernameNotFoundException.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Usuario;
 import gerdauGrupo16.desafiogc.model.enumeration.Roles;
 import gerdauGrupo16.desafiogc.repository.UsuarioRepository;
@@ -18,7 +28,7 @@ public class UsuarioDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // o "username" do formulário de login é o e-mail
+
         String emailNormalizado = EmailUsuario.normalizar(email);
         Usuario usuario = usuarioRepository.findByEmailIgnoreCase(emailNormalizado)
                 .orElseThrow(() ->
@@ -33,6 +43,5 @@ public class UsuarioDetailsService implements UserDetailsService {
                 .roles(roles)
                 .build();
     }
-
 
 }

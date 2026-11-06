@@ -1,5 +1,15 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: CategoriaController.java
+ * TIPO: controller REST (@RestController), rota /categoria.
+ * FUNÇÃO: API de consulta de categorias (Civil, Eletromecânica, Facilities, Materiais, Insumos), devolvendo
+ *   id e nome.
+ * MÉTODOS:
+ * - listarCategorias(): GET /categoria. Todas as categorias.
+ * - buscarPorCategoria(categoriaNome): GET /categoria/busca. Categorias cujo nome contém o texto informado.
+ */
+
 import gerdauGrupo16.desafiogc.controller.dto.CategoriaDTO;
 import gerdauGrupo16.desafiogc.service.CategoriaService;
 import lombok.AllArgsConstructor;

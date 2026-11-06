@@ -1,5 +1,37 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: ConsultaPaginaController.java
+ * TIPO: controller de telas (@Controller). É o fluxo principal de comprador e fornecedor.
+ * FUNÇÃO: consulta de serviços, confirmação de um serviço existente e solicitação de serviço novo. Regra
+ *   geral: procure primeiro, crie só se não existir. O administrador não contrata nem solicita; quando cai
+ *   aqui é redirecionado para /admin/servicos.
+ * MÉTODOS:
+ * - raiz(): a rota / redireciona para /servicos.
+ * - consultar(nomeServico, auth, model, redirect): tela de busca. Aceita vários termos separados por ponto
+ *   e vírgula (lista combinada). Com um termo: nenhum resultado abre Serviço não encontrado; um resultado
+ *   abre direto os detalhes; vários mostram a lista.
+ * - detalhes(codigo, digitado, auth, model): tela de detalhes e confirmação do serviço. Serviço rejeitado
+ *   não abre para quem não é administrador.
+ * - ehAdmin(auth): atalho para PerfilAcesso.ehAdmin.
+ * - modoContrato(servico, admin): verdadeiro quando o serviço está APROVADO e o usuário não é admin; nesse
+ *   modo a unidade de medida vem do catálogo e não pode ser escolhida.
+ * - paginaDetalhes(servico, digitado, erro, quantidade, observacao, unidadeMedidaId, admin, model):
+ *   preenche o model da tela de detalhes (adicionais, unidades, dica de quantidade, valores já digitados).
+ * - buscarUnidade(id): acha a unidade de medida pelo id (ou null).
+ * - paginaNaoEncontrado(nome, model): tela Serviço não encontrado, com as sugestões parecidas.
+ * - confirmar(codigo, ids, unidadeMedidaId, quantidade, observacao, digitado, auth, model): valida a
+ *   quantidade conforme a unidade e a observação e mostra o resumo na tela de conclusão. Não grava
+ *   contratação.
+ * - novo(nome, model): abre o formulário de novo serviço com o nome já padronizado.
+ * - solicitar(nomeServico, categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, quantidade,
+ *   observacao, principal, model): valida os campos e cria o serviço PENDENTE (ServicoService.criarNovo).
+ *   Erro de duplicado ou limite aparece no próprio formulário.
+ * - paginaCadastro(nome, erro, categoriaId, descricao, unidadeMedidaId, unidadeCustoId, quantidade,
+ *   observacao, model): preenche o model do formulário (contador de caracteres, sugestões, listas e valores
+ *   já digitados).
+ */
+
 import gerdauGrupo16.desafiogc.controller.dto.ServicoDTO;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
@@ -30,7 +62,7 @@ public class ConsultaPaginaController {
 
     private final ServicoService service;
     private final UnidadeCustoService adicionaisService;
-    // [NOVO] usados pelo formulário de cadastro (dropdowns de categoria e unidade de medida)
+
     private final CategoriaService categoriaService;
     private final UnidadeMedidaService unidadeMedidaService;
 
@@ -50,12 +82,11 @@ public class ConsultaPaginaController {
     @GetMapping("/servicos")
     public String consultar(@RequestParam(required = false) String nomeServico, Authentication auth, Model model,
                             RedirectAttributes redirect) {
-        boolean admin = ehAdmin(auth);   // serviço rejeitado só aparece para o administrador
+        boolean admin = ehAdmin(auth);
         boolean buscou = nomeServico != null && !nomeServico.isBlank();
         model.addAttribute("nomeServico", nomeServico);
         model.addAttribute("multiplo", false);
 
-        // [PESQUISA MÚLTIPLA] "Ajudante;Mecanico;Almoço" pesquisa os três de uma vez (separador: ponto e vírgula)
         List<String> termos = TermosBusca.separar(nomeServico);
 
         if (!buscou || termos.isEmpty()) {
@@ -70,19 +101,18 @@ public class ConsultaPaginaController {
             model.addAttribute("candidatos", busca.candidatos());
             model.addAttribute("termosPorCodigo", busca.termosPorCodigo());
             model.addAttribute("termosSemResultado", busca.semResultado());
-            return "servicos/busca";   // com vários termos sempre mostra a lista (sem pular direto para os detalhes)
+            return "servicos/busca";
         }
 
-        // um termo só (inclui "ajudante;" com ponto e vírgula sobrando): comportamento de sempre
         String termo = termos.get(0);
-        model.addAttribute("nomeServico", termo);   // sem o ";" sobrando
+        model.addAttribute("nomeServico", termo);
         List<Servico> candidatos = service.buscarCandidatos(termo, admin);
 
         if (candidatos.isEmpty()) {
             return paginaNaoEncontrado(service.padronizar(termo), model);
         }
         if (candidatos.size() == 1) {
-            // [ALTERADO] a chave agora é o CÓDIGO (o nome pode repetir em categorias diferentes)
+
             redirect.addAttribute("codigo", candidatos.get(0).getCodigoServico());
             redirect.addAttribute("digitado", termo);
             return "redirect:/servicos/detalhes";
@@ -97,11 +127,11 @@ public class ConsultaPaginaController {
                            @RequestParam(required = false) String digitado,
                            Authentication auth,
                            Model model) {
-        // o administrador não contrata: ele altera as características do serviço
+
         if (ehAdmin(auth)) return "redirect:/admin/servicos/" + codigo;
         Optional<Servico> achado = service.buscarPorCodigo(codigo)
-                .filter(s -> ServicoService.visivelPara(s, false));   // rejeitado não existe para o usuário
-        if (achado.isEmpty()) { // Se alguem mexer na URL com um código que nao existe, mandamos de volta para a busca
+                .filter(s -> ServicoService.visivelPara(s, false));
+        if (achado.isEmpty()) {
             return "redirect:/servicos";
         }
         return paginaDetalhes(achado.get(), digitado, null, null, null, null, ehAdmin(auth), model);
@@ -111,11 +141,6 @@ public class ConsultaPaginaController {
         return PerfilAcesso.ehAdmin(auth);
     }
 
-    /**
-     * Serviço APROVADO visto por quem não é administrador: a unidade de medida vem do catálogo e não pode ser
-     * escolhida (só o administrador atribui; se ainda não tiver unidade, fica sem). Os adicionais do contrato
-     * qualquer usuário pode marcar.
-     */
     private boolean modoContrato(Servico servico, boolean admin) {
         return servico.getStatus() == StatusServico.APROVADO && !admin;
     }
@@ -129,7 +154,7 @@ public class ConsultaPaginaController {
         model.addAttribute("digitado", digitado == null ? "" : digitado);
         model.addAttribute("textoExtra", service.tratarTextoExtra(digitado, servico));
         model.addAttribute("grupos", adicionaisService.listarAdicionaisAgrupados());
-        // [NOVO] o contrato também escolhe a unidade de medida (vem preenchida se o serviço já tem uma)
+
         model.addAttribute("unidadesMedida", unidadeMedidaService.listarTodasUnidadesMedidas());
         model.addAttribute("modoContrato", contrato);
         model.addAttribute("quantidadeObrigatoria", contrato && unidadeDefinida);
@@ -164,21 +189,18 @@ public class ConsultaPaginaController {
                             @RequestParam(name = "digitado", required = false) String digitado,
                             Authentication auth,
                             Model model) {
-        if (ehAdmin(auth)) return "redirect:/admin/servicos/" + codigo;   // admin não contrata
+        if (ehAdmin(auth)) return "redirect:/admin/servicos/" + codigo;
         Optional<Servico> achado = service.buscarPorCodigo(codigo)
-                .filter(s -> ServicoService.visivelPara(s, false));   // rejeitado não existe para o usuário
+                .filter(s -> ServicoService.visivelPara(s, false));
         if (achado.isEmpty()) {
             return "redirect:/servicos";
         }
         Servico servico = achado.get();
         boolean admin = false;
 
-        // Serviço aprovado e usuário que não é admin: a unidade vem do catálogo (ignora a unidade que vier no POST,
-        // mesmo que alguém monte a requisição à mão). Os adicionais continuam valendo.
         boolean contrato = modoContrato(servico, admin);
         UnidadeMedida unidade = contrato ? servico.getUnidadeMedida() : buscarUnidade(unidadeMedidaId);
 
-        // sem unidade definida pelo admin não há como informar quantidade
         QuantidadeServico.Resultado qtd = contrato && unidade == null
                 ? new QuantidadeServico.Resultado(null, null)
                 : QuantidadeServico.validar(quantidade, unidade == null ? null : unidade.getCodigo(), contrato);
@@ -201,7 +223,7 @@ public class ConsultaPaginaController {
         model.addAttribute("servicoNome", achado.get().getNomeServico());
         model.addAttribute("mensagem", "O serviço já existe no catálogo.");
         model.addAttribute("itens", nomes);
-        // [NOVO] unidade de medida escolhida (opcional)
+
         model.addAttribute("medida", unidade == null ? null : unidade.getCodigo() + " - " + unidade.getDescricao());
         model.addAttribute("quantidade", qtd.valor() == null ? null
                 : QuantidadeServico.formatar(qtd.valor()) + " " + unidade.getCodigo());
@@ -214,7 +236,6 @@ public class ConsultaPaginaController {
         return paginaCadastro(service.padronizar(nome), null, null, null, null, null, null, null, model);
     }
 
-    /** Cadastra de verdade (status PENDENTE). O código é gerado pelo sistema (ex.: FAC-000001). */
     @PostMapping("/servicos/novo")
     public String solicitar(@RequestParam String nomeServico,
                             @RequestParam(required = false) Long categoriaId,
@@ -237,7 +258,7 @@ public class ConsultaPaginaController {
         } else if (descricaoServico != null && descricaoServico.length() > 100) {
             erro = "A descrição deve ter no máximo 100 caracteres.";
         }
-        // quantidade (opcional) conforme a unidade de medida escolhida; observação opcional
+
         UnidadeMedida unidadeEscolhida = buscarUnidade(unidadeMedidaId);
         QuantidadeServico.Resultado qtd = null;
         String obs = observacao == null ? "" : observacao.strip();
@@ -271,7 +292,7 @@ public class ConsultaPaginaController {
             model.addAttribute("observacao", obs.isEmpty() ? null : obs);
             return "servicos/concluido";
         } catch (ResponseStatusException e) {
-            // 409 duplicado / 404 não encontrado: mostra a mensagem no próprio formulário
+
             return paginaCadastro(nome, e.getReason(), categoriaId, descricaoServico, unidadeMedidaId, unidadeCustoId, quantidade, observacao, model);
         }
     }
@@ -287,13 +308,13 @@ public class ConsultaPaginaController {
         model.addAttribute("estourou", n > ServicoService.LIMITE_SAP);
         model.addAttribute("similares", service.similares(nome));
         model.addAttribute("erro", erro);
-        // [NOVO] dropdowns e valores já digitados (para não perder o que o usuário preencheu ao dar erro)
+
         model.addAttribute("categorias", categoriaService.listarTodasCategorias());
         model.addAttribute("unidadesMedida", unidadeMedidaService.listarTodasUnidadesMedidas());
         model.addAttribute("categoriaId", categoriaId);
         model.addAttribute("descricaoServico", descricao == null ? "" : descricao);
         model.addAttribute("unidadeMedidaId", unidadeMedidaId);
-        // [NOVO] unidade de custo (opcional), igual à de medida
+
         model.addAttribute("unidadesCusto", adicionaisService.listarTodasUnidadesCustos());
         model.addAttribute("unidadeCustoId", unidadeCustoId);
         model.addAttribute("quantidade", quantidade == null ? "" : quantidade);

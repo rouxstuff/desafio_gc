@@ -1,5 +1,18 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: FornecedorController.java
+ * TIPO: controller REST (@RestController), rota /fornecedor, restrito ao ADMIN.
+ * FUNÇÃO: API de fornecedores e do vínculo fornecedor x serviço.
+ * MÉTODOS:
+ * - buscarFornecedores(): GET /fornecedor. Lista todos os fornecedores.
+ * - buscarCodigoFornecedor(codigoFornecedor): GET /fornecedor/codigoFornecedor. Busca pelo código exato.
+ * - vincularServico(fornecedorId, codigoServico): POST /fornecedor/{id}/servicos/{codigo}. Vincula o
+ *   fornecedor a um serviço APROVADO. Respostas: 201 criado, 404 não existe, 409 já vinculado ou serviço
+ *   não aprovado.
+ * - listarServicosDoFornecedor(fornecedorId): GET /fornecedor/{id}/servicos. Serviços do fornecedor.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.service.FornecedorService;
@@ -27,8 +40,6 @@ public class FornecedorController {
         return fornecedorService.buscarCodigoFornecedor(codigoFornecedor);
     }
 
-    // [NOVO, do Kaio] Vincula o fornecedor a um serviço APROVADO do catálogo.
-    // 201 criado | 404 não existe | 409 já vinculado ou serviço não aprovado
     @PostMapping("/{fornecedorId}/servicos/{codigoServico}")
     public ResponseEntity<Void> vincularServico(@PathVariable("fornecedorId") Long fornecedorId,
                                                 @PathVariable("codigoServico") String codigoServico) {
@@ -36,7 +47,6 @@ public class FornecedorController {
         return ResponseEntity.created(URI.create("/fornecedor/" + fornecedorId + "/servicos")).build();
     }
 
-    // [NOVO, do Kaio] Lista os serviços do fornecedor.
     @GetMapping("/{fornecedorId}/servicos")
     public List<Servico> listarServicosDoFornecedor(@PathVariable("fornecedorId") Long fornecedorId) {
         return fornecedorService.listarServicosDoFornecedor(fornecedorId);

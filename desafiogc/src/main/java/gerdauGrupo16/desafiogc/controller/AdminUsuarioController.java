@@ -1,5 +1,22 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: AdminUsuarioController.java
+ * TIPO: controller de telas (@Controller), rota /admin/usuarios, restrito ao ADMIN.
+ * FUNÇÃO: aba Usuários. O administrador cria usuários (login por e-mail), define o perfil (ADMIN, COMPRADOR
+ *   ou FORNECEDOR) e liga cada usuário de perfil FORNECEDOR a um fornecedor existente. A regra de negócio
+ *   está em UsuarioService.
+ * MÉTODOS:
+ * - tela(fornecedorId, model): monta a página com os usuários, os fornecedores e os fornecedores ainda sem
+ *   usuário. Se vier fornecedorId (botão Criar usuário da lista), o formulário abre já com o perfil
+ *   Fornecedor e esse fornecedor escolhido.
+ * - criar(email, senha, perfil, fornecedorId, redirect): cria o usuário; em caso de erro devolve a mensagem
+ *   e o que foi digitado (nunca a senha).
+ * - vincular(id, fornecedorId, redirect): liga ou troca o fornecedor de um usuário de perfil Fornecedor.
+ * - erroNoFormulario(redirect, mensagem, email, perfil, fornecedorId): método auxiliar que guarda o erro e
+ *   os valores digitados para reexibir o formulário.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Usuario;
 import gerdauGrupo16.desafiogc.model.enumeration.Roles;
 import gerdauGrupo16.desafiogc.service.UsuarioService;
@@ -17,10 +34,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Locale;
 
-/**
- * Aba "Usuários" do administrador: cria usuários (login por e-mail) e vincula cada usuário de perfil Fornecedor a um
- * fornecedor já existente na base. Duas travas: regra de URL (SecurityConfiguration) e @PreAuthorize.
- */
 @Controller
 @RequestMapping("/admin/usuarios")
 @PreAuthorize("hasRole('ADMIN')")
@@ -32,7 +45,6 @@ public class AdminUsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    /** fornecedorId (opcional): vem do botão "Criar usuário" da lista de fornecedores sem usuário e já preenche o formulário. */
     @GetMapping
     public String tela(@RequestParam(value = "fornecedorId", required = false) Long fornecedorId, Model model) {
         UsuarioService.Painel painel = usuarioService.painel();
@@ -42,7 +54,6 @@ public class AdminUsuarioController {
         model.addAttribute("perfis", Roles.values());
         model.addAttribute("perfilFornecedor", Roles.FORNECEDOR);
 
-        // valores do formulário: vêm de uma tentativa com erro (flash) ou do botão "Criar usuário"
         if (!model.containsAttribute("formPerfil") && fornecedorId != null) {
             model.addAttribute("formPerfil", Roles.FORNECEDOR.name());
             model.addAttribute("formFornecedorId", fornecedorId);
@@ -67,7 +78,7 @@ public class AdminUsuarioController {
         } catch (ResponseStatusException e) {
             erroNoFormulario(redirect, e.getReason(), email, perfil, fornecedorId);
         } catch (DataIntegrityViolationException e) {
-            // só chega aqui se duas pessoas gravarem ao mesmo tempo: o banco barrou e-mail ou fornecedor repetido
+
             erroNoFormulario(redirect, "Não foi possível criar: o e-mail ou o fornecedor já está em uso por outro usuário.", email, perfil, fornecedorId);
         }
         return "redirect:/admin/usuarios";
@@ -89,7 +100,6 @@ public class AdminUsuarioController {
         return "redirect:/admin/usuarios";
     }
 
-    /** Devolve o erro e o que já foi digitado (menos a senha, que nunca volta para a tela). */
     private void erroNoFormulario(RedirectAttributes redirect, String mensagem, String email, String perfil, Long fornecedorId) {
         redirect.addFlashAttribute("erro", mensagem);
         redirect.addFlashAttribute("formEmail", email);

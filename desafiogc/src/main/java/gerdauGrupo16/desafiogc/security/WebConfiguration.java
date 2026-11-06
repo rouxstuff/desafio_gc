@@ -1,5 +1,13 @@
 package gerdauGrupo16.desafiogc.security;
 
+/*
+ * ARQUIVO: WebConfiguration.java
+ * TIPO: classe de configuração do Spring MVC (@Configuration, WebMvcConfigurer).
+ * FUNÇÃO: registra rotas que só mostram uma página, sem controller.
+ * MÉTODOS:
+ * - addViewControllers(registry): liga /login à página servicos/login, com prioridade máxima.
+ */
+
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import org.springframework.context.annotation.Configuration;
@@ -14,4 +22,3 @@ public class WebConfiguration implements WebMvcConfigurer {
         registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
     }
 }
-

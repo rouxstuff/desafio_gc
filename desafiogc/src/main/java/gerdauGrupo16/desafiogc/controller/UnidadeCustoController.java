@@ -1,5 +1,14 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: UnidadeCustoController.java
+ * TIPO: controller REST (@RestController), rota /unidades-custo.
+ * FUNÇÃO: API de consulta das unidades de custo (adicionais de mão de obra, como hora extra e adicional
+ *   noturno).
+ * MÉTODOS:
+ * - listar(): GET /unidades-custo. Devolve id e nome de todas, em ordem alfabética.
+ */
+
 import gerdauGrupo16.desafiogc.controller.dto.CategoriaDTO;
 import gerdauGrupo16.desafiogc.controller.dto.UnidadeCustoDTO;
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;

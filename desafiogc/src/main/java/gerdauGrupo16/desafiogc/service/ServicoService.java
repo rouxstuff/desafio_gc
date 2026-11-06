@@ -1,5 +1,51 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: ServicoService.java
+ * TIPO: classe de serviço (@Service). É o coração das regras de negócio de serviço.
+ * FUNÇÃO: consulta, sugestão de parecidos, criação com bloqueio de duplicados, geração de código, alteração
+ *   de características e aprovação ou reprovação. Limites: nome até 40 caracteres (LIMITE_SAP); a nota da
+ *   régua de 90% ou mais bloqueia (LIMITE_BLOQUEIO) e de 60% ou mais sugere (LIMITE_SUGESTAO); no máximo 5
+ *   sugestões e 50 candidatos de busca.
+ * CLASSE INTERNA: BuscaMultipla (record) é o resultado de pesquisar vários termos de uma vez: termos,
+ *   candidatos, de qual termo cada serviço veio e termos sem resultado.
+ * MÉTODOS:
+ * - listarTodos(): todos os serviços.
+ * - visivelPara(servico, admin): regra de visibilidade; REJEITADO só o administrador vê.
+ * - listarPagina(q, pagina, tamanho, incluirRejeitados): catálogo paginado (máximo 500 por página), por
+ *   nome ou código, ordenado por nome.
+ * - buscarPorNome(nome): serviços cujo nome contém o texto.
+ * - buscarPorCategoriaNomeEServicoNome(categoriaNome, nomeServico, incluirRejeitados): filtra por categoria
+ *   e/ou nome; aceita só um dos dois.
+ * - buscarPorCodigo(codigo): acha pelo código, a chave do serviço.
+ * - buscarCandidatos(digitado, incluirRejeitados): candidatos da tela de consulta usando o índice em
+ *   memória (nome contém o digitado ou vice-versa, também na forma normalizada, assim H EXTRA acha HORA
+ *   EXTRA). Até 50.
+ * - buscarMultiplo(digitado, incluirRejeitados): pesquisa vários termos separados por ponto e vírgula e
+ *   junta os resultados sem repetir.
+ * - buscarSugestoes(categoriaId, nome): serviços parecidos com a nota da régua; categoriaId nulo compara
+ *   com todas.
+ * - similares(nome): sugestões de todas as categorias (tela não encontrado e cadastro).
+ * - criarNovo(dto, solicitante): cria o serviço PENDENTE. Recusa nome acima de 40 (400), categoria
+ *   inexistente (404), mesmo nome na categoria (409) e nota de 90% ou mais na mesma categoria (409). O
+ *   código só é gerado depois das validações.
+ * - gerarCodigo(categoria): monta PREFIXO-NÚMERO continuando do maior número da categoria, com o contador
+ *   do banco, e pula números que já existem.
+ * - listarPorStatus(status): serviços de um status, por nome (fila de aprovação).
+ * - buscarOpcoes(status, texto, max): busca leve por nome ou código para a tela de vínculos; ignora os
+ *   curingas % e _.
+ * - listarOpcoesPorStatus(status): código e nome de todos os serviços de um status.
+ * - atualizarCaracteristicas(codigo, unidadeMedidaId, unidadeCustoId, descricao): altera unidade de medida,
+ *   unidade de custo e descrição (até 100). Unidade nula remove a unidade.
+ * - aprovar(codigo): PENDENTE vira APROVADO.
+ * - reprovar(codigo, motivo): PENDENTE vira REJEITADO; o motivo é obrigatório.
+ * - buscarPendente(codigo): método auxiliar; acha o serviço e confirma que ainda está PENDENTE (senão 409).
+ * - tratarTextoExtra(digitado, servico): devolve o que foi digitado além do nome do serviço (ex.: hora
+ *   extra), para avisar o usuário.
+ * - padronizar(texto): maiúsculas, sem acento e com espaços simples.
+ * - conflito(mensagem) e naoEncontrado(mensagem): criam os erros 409 e 404.
+ */
+
 import gerdauGrupo16.desafiogc.controller.dto.ServicoDTO;
 import gerdauGrupo16.desafiogc.controller.dto.SugestaoDTO;
 import gerdauGrupo16.desafiogc.model.entity.Categoria;
@@ -34,9 +80,8 @@ import java.util.Optional;
 public class ServicoService {
     public static final int LIMITE_SAP = 40;
 
-    // [NOVO, do Kaio] limites da régua de aderência
-    public static final double LIMITE_BLOQUEIO = 0.90;   // >= 90%: duplicado, bloqueia (409)
-    public static final double LIMITE_SUGESTAO = 0.60;   // >= 60%: parecido, sugere
+    public static final double LIMITE_BLOQUEIO = 0.90;
+    public static final double LIMITE_SUGESTAO = 0.60;
     private static final int MAX_SUGESTOES = 5;
     private static final int MAX_CANDIDATOS = 50;
 
@@ -65,15 +110,10 @@ public class ServicoService {
         return repository.findAll();
     }
 
-    /**
-     * Quem pode ver o serviço REJEITADO: só o administrador. Para os demais perfis o serviço rejeitado não existe
-     * (não aparece em consulta, catálogo, API nem na tela de detalhes).
-     */
     public static boolean visivelPara(Servico servico, boolean admin) {
         return admin || servico.getStatus() != StatusServico.REJEITADO;
     }
 
-    /** Catálogo paginado (por nome OU código). Tamanho máximo de página: 500. incluirRejeitados: só o administrador. */
     @Transactional(readOnly = true)
     public Page<Servico> listarPagina(String q, int pagina, int tamanho, boolean incluirRejeitados) {
         Pageable pageable = PageRequest.of(Math.max(pagina, 0), Math.min(Math.max(tamanho, 1), 500), Sort.by("nomeServico"));
@@ -90,7 +130,6 @@ public class ServicoService {
         return repository.findByNomeServicoContaining(padronizar(nome));
     }
 
-    // [ALTERADO, do Kaio] aceita só um dos dois filtros
     public List<Servico> buscarPorCategoriaNomeEServicoNome(String categoriaNome, String nomeServico, boolean incluirRejeitados) {
         boolean temCategoria = categoriaNome != null && !categoriaNome.isBlank();
         boolean temNome = nomeServico != null && !nomeServico.isBlank();
@@ -113,15 +152,11 @@ public class ServicoService {
         return incluirRejeitados ? repository.findAll() : repository.findByStatusNot(fora);
     }
 
-    // [ALTERADO] antes buscava pelo NOME exato; agora o nome pode repetir em categorias diferentes,
-    // então a tela de detalhes passa a identificar o serviço pelo CÓDIGO (a chave primária).
     public Optional<Servico> buscarPorCodigo(String codigo) {
         if (codigo == null || codigo.isBlank()) return Optional.empty();
         return repository.findById(codigo.trim());
     }
 
-    /** Candidatos da tela de consulta: nome contém o digitado (ou vice-versa), também comparando as formas
-     *  normalizadas (assim "H EXTRA" acha "HORA EXTRA"). Usa o índice em memória e devolve no máximo 50. */
     public List<Servico> buscarCandidatos(String digitado, boolean incluirRejeitados) {
         String dPad = padronizar(digitado);
         if (dPad.isEmpty()) return new ArrayList<>();
@@ -141,13 +176,9 @@ public class ServicoService {
         return achados;
     }
 
-    /** [PESQUISA MÚLTIPLA] Resultado de pesquisar vários termos de uma vez (separados por ponto e vírgula).
-     *  candidatos: união sem repetição, ordenada por nome; termosPorCodigo: de qual(is) termo(s) cada serviço veio
-     *  (o primeiro é usado como "digitado" na tela de detalhes); semResultado: termos que não acharam nada. */
     public record BuscaMultipla(List<String> termos, List<Servico> candidatos,
                                 Map<String, List<String>> termosPorCodigo, List<String> semResultado) { }
 
-    /** Roda a busca normal ({@link #buscarCandidatos(String, boolean)}) para cada termo e junta os resultados. Até 50 por termo. */
     public BuscaMultipla buscarMultiplo(String digitado, boolean incluirRejeitados) {
         List<String> termos = TermosBusca.separar(digitado);
         Map<String, Servico> unicos = new LinkedHashMap<>();
@@ -166,24 +197,17 @@ public class ServicoService {
         return new BuscaMultipla(termos, todos, termosPorCodigo, semResultado);
     }
 
-    // ----------------------------------------------------------------- [NOVO, do Kaio] régua de aderência
-
-    /** Serviços parecidos com o nome digitado, com a nota da régua (0 a 100%), usando o índice em memória.
-     *  categoriaId = null compara com todas as categorias (usado na tela de consulta). */
     public List<SugestaoDTO> buscarSugestoes(Long categoriaId, String nome) {
         return indice.sugestoes(categoriaId, nome, MAX_SUGESTOES, LIMITE_SUGESTAO);
     }
 
-    /** Sugestões da tela "não encontrado" e do cadastro (todas as categorias). */
     public List<SugestaoDTO> similares(String nome) {
         return indice.sugestoes(null, nome, MAX_SUGESTOES, LIMITE_SUGESTAO);
     }
 
-    /** Cria um serviço PENDENTE com código gerado pelo sistema. Bloqueia (409) nome repetido na categoria
-     *  e nome com aderência >= 90% a um existente da mesma categoria. */
     @Transactional
     public Servico criarNovo(ServicoDTO dto, String solicitante) {
-        String nome = padronizar(dto.nomeServico());   // MAIÚSCULO, sem acento, espaços normalizados
+        String nome = padronizar(dto.nomeServico());
 
         if (nome.length() > LIMITE_SAP) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -204,11 +228,11 @@ public class ServicoService {
         }
 
         Servico servico = new Servico();
-        servico.setCodigoServico(gerarCodigo(categoria));   // só aqui, depois de validar tudo (não queima número)
+        servico.setCodigoServico(gerarCodigo(categoria));
         servico.setNomeServico(nome);
         servico.setDescricaoServico(dto.descricaoServico());
         servico.setCategoria(categoria);
-        servico.setStatus(StatusServico.PENDENTE);   // aguarda aprovação
+        servico.setStatus(StatusServico.PENDENTE);
         servico.setSolicitadoPor(solicitante);
         if (dto.unidadeMedidaId() != null) {
             servico.setUnidadeMedida(unidadeMedidaRepository.findById(dto.unidadeMedidaId())
@@ -219,24 +243,22 @@ public class ServicoService {
                     .orElseThrow(() -> naoEncontrado("Unidade de custo não encontrada.")));
         }
         Servico salvo = repository.save(servico);
-        indice.invalidarAposCommit();   // o índice em memória precisa enxergar o serviço novo
+        indice.invalidarAposCommit();
         return salvo;
     }
 
-    /** Monta PREFIXO-000001 usando o contador da categoria (incremento atômico no banco). */
     private String gerarCodigo(Categoria categoria) {
         if (categoria.getPrefixo() == null || categoria.getPrefixo().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "A categoria " + categoria.getCategoriaNome() + " não tem prefixo configurado.");
         }
-        // [PREFIXO] continua do ÚLTIMO número registrado na categoria (inclusive os códigos importados, ex.: FAC-4048071
-        // -> próximo FAC-4048072). Se o contador da categoria estiver atrás, ele é elevado antes de incrementar.
+
         List<String> codigosExistentes = indice.entradas().stream().map(IndiceServicos.Entrada::codigo).toList();
         long maiorExistente = CodigoComPrefixo.maiorNumero(codigosExistentes, categoria.getPrefixo());
         if (maiorExistente > 0) {
             categoriaRepository.garantirUltimoNumero(categoria.getId(), maiorExistente);
         }
-        // e pula números que já existem, para nunca gerar um código repetido
+
         for (int tentativa = 0; tentativa < 1000; tentativa++) {
             categoriaRepository.incrementarUltimoNumero(categoria.getId());
             long numero = categoriaRepository.buscarUltimoNumero(categoria.getId());
@@ -247,35 +269,24 @@ public class ServicoService {
                 "Não consegui gerar um código livre para a categoria " + categoria.getCategoriaNome() + ".");
     }
 
-    // ----------------------------------------------------------------- governança: aprovar / reprovar
-
     public List<Servico> listarPorStatus(StatusServico status) {
         return repository.findByStatusOrderByNomeServico(status);
     }
 
-    /** [BUSCA NOS VÍNCULOS] Procura por nome OU código (parte do texto, sem diferenciar maiúsculas/acentos).
-     *  Devolve no máximo {@code max} resultados, ordenados por nome. Termo vazio devolve lista vazia. */
     @Transactional(readOnly = true)
     public List<ServicoOpcaoView> buscarOpcoes(StatusServico status, String texto, int max) {
-        // "%" e "_" são curingas do LIKE: tiramos para o usuário não casar tudo sem querer
+
         String termo = padronizar(texto).replace("%", "").replace("_", "").trim();
         if (termo.isEmpty()) return List.of();
         return repository.buscarOpcoes(status, termo, PageRequest.of(0, Math.max(max, 1)));
     }
 
-    /** [PERFORMANCE] Só código e nome (1 query leve). Usado nas listas suspensas da tela de vínculos. */
     public List<ServicoOpcaoView> listarOpcoesPorStatus(StatusServico status) {
         return repository.listarOpcoes(status);
     }
 
     public static final int LIMITE_DESCRICAO = 100;
 
-    /**
-     * Altera as características de um serviço já cadastrado (tela do administrador): unidade de medida, unidade de
-     * custo e descrição. Nome, categoria, código e status não mudam aqui (o nome é a base da checagem de duplicados;
-     * o status muda em Aprovações). Unidade nula = remove a unidade.
-     * 404 serviço/unidade não existe | 400 descrição maior que o limite.
-     */
     @Transactional
     public Servico atualizarCaracteristicas(String codigo, Long unidadeMedidaId, Long unidadeCustoId, String descricao) {
         Servico s = repository.findById(codigo).orElseThrow(() -> naoEncontrado("Serviço não encontrado."));
@@ -289,7 +300,7 @@ public class ServicoService {
         s.setUnidadeCusto(unidadeCustoId == null ? null : unidadeCustoRepository.findById(unidadeCustoId)
                 .orElseThrow(() -> naoEncontrado("Unidade de custo não encontrada.")));
         s.setDescricaoServico(desc == null || desc.isEmpty() ? null : desc);
-        return s;   // o JPA grava sozinho no commit (dirty checking)
+        return s;
     }
 
     @Transactional
@@ -298,7 +309,7 @@ public class ServicoService {
         s.setStatus(StatusServico.APROVADO);
         s.setMotivoRejeicao(null);
         indice.invalidarAposCommit();
-        return s;   // o JPA grava sozinho no commit (dirty checking)
+        return s;
     }
 
     @Transactional
@@ -320,8 +331,6 @@ public class ServicoService {
         }
         return s;
     }
-
-    // ----------------------------------------------------------------- da Fernanda (sem mudanças)
 
     public String tratarTextoExtra(String digitado, Servico servico) {
         String d = padronizar(digitado);

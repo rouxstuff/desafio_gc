@@ -1,5 +1,27 @@
 package gerdauGrupo16.desafiogc.service.importacao;
 
+/*
+ * ARQUIVO: ImportacaoService.java
+ * TIPO: classe de serviço (@Service).
+ * FUNÇÃO: importa o catálogo saneado e os vínculos por CSV. Regras de segurança: tudo ou nada (um erro e
+ *   nada é gravado; o relatório lista as linhas); modo simular valida sem gravar; reenviar o arquivo não
+ *   duplica (o que já existe é pulado). Serviços: colunas codigo_servico, nome_servico, categoria,
+ *   unidade_medida, descricao_servico, status (padrão APROVADO) e prefixo_categoria (só para criar
+ *   categoria nova); os nomes da planilha original também funcionam. Vínculos: codigo_fornecedor e
+ *   codigo_servico (só serviço APROVADO aceita vínculo).
+ * CLASSES INTERNAS: Relatorio (record) é o resultado mostrado na tela; Par (record) é o par fornecedor +
+ *   serviço; Mensagens guarda as mensagens com limite de 200.
+ * MÉTODOS:
+ * - importarServicos(bytes, simular): valida cada linha (código até 20, nome até 40, categoria, unidade,
+ *   status), aplica o prefixo da categoria ao código, detecta nome repetido na categoria e grava em lotes
+ *   de 500.
+ * - sincronizarContadores(importados): ajusta o contador de cada categoria para o maior número importado,
+ *   para os códigos novos continuarem dali.
+ * - importarVinculos(bytes, simular): valida os pares, aceita o código com ou sem prefixo (se único), cria
+ *   os fornecedores que não existem e grava os vínculos em lotes JDBC de 500.
+ * - limparCodigo(bruto): tira espaços e o .0 que o Excel acrescenta em números.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Categoria;
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.FornecedorServico;
@@ -28,20 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Importa o catálogo SANEADO (e os vínculos) a partir de CSV.
- *
- * Regras de segurança:
- *  - TUDO OU NADA: se qualquer linha tiver erro, nada é gravado e o relatório lista os erros (com o número da linha).
- *  - "Simular" valida tudo e mostra o que seria feito, sem gravar nada.
- *  - Pode rodar de novo com o mesmo arquivo: códigos que já existem são pulados (não duplica, não sobrescreve).
- *
- * Colunas de SERVIÇOS (apelidos aceitos entre parênteses; aceita também os nomes da planilha original):
- *   codigo_servico (codigo_do_servico), nome_servico (descricao_do_item), categoria (grupo_de_servico),
- *   unidade_medida (opcional), descricao_servico (opcional), status (opcional, padrão APROVADO),
- *   prefixo_categoria (opcional: só é usado se a categoria ainda NÃO existe, para criá-la)
- * Colunas de VÍNCULOS: codigo_fornecedor (codigo_do_fornecedor), codigo_servico (codigo_do_servico)
- */
 @Service
 public class ImportacaoService {
 
@@ -92,8 +100,6 @@ public class ImportacaoService {
         this.em = em;
     }
 
-    // ------------------------------------------------------------------------------------------ SERVIÇOS
-
     @Transactional
     public Relatorio importarServicos(byte[] bytes, boolean simular) {
         CsvLeitor.Resultado csv = CsvLeitor.ler(bytes);
@@ -121,15 +127,15 @@ public class ImportacaoService {
             if (u.getCodigo() != null) unidades.put(u.getCodigo().toUpperCase(), u);
         }
         Set<String> codigosExistentes = new HashSet<>(servicoRepository.listarCodigos());
-        Map<String, String> nomesExistentes = new HashMap<>();          // "CATEGORIA|NOME" -> código
+        Map<String, String> nomesExistentes = new HashMap<>();
         for (ServicoIndiceView v : servicoRepository.listarParaIndice()) {
             String cat = nomeCategoriaPorId.get(v.getCategoriaId());
             if (cat != null) nomesExistentes.put(cat + "|" + servicoService.padronizar(v.getNomeServico()), v.getCodigoServico());
         }
 
         Map<String, Servico> novos = new LinkedHashMap<>();
-        Map<String, String> assinaturas = new HashMap<>();              // código -> "CATEGORIA|NOME|UNIDADE"
-        Map<String, String> nomesNovos = new HashMap<>();               // "CATEGORIA|NOME" -> código
+        Map<String, String> assinaturas = new HashMap<>();
+        Map<String, String> nomesNovos = new HashMap<>();
         List<Categoria> categoriasNovas = new ArrayList<>();
         int jaExistiam = 0;
         int repetidas = 0;
@@ -168,7 +174,6 @@ public class ImportacaoService {
                 if (unidade == null) { erros.add(ref + "unidade de medida '" + unTxt + "' não existe."); continue; }
             }
 
-            // [PREFIXO] o código existente é mantido e ganha o prefixo da categoria (CIV-4057137). Já com prefixo: não muda.
             Categoria categoriaConhecida = categorias.get(catTxt);
             String prefixoDaCategoria = categoriaConhecida != null
                     ? categoriaConhecida.getPrefixo() : servicoService.padronizar(l.get(PREFIXO));
@@ -245,8 +250,6 @@ public class ImportacaoService {
                 categoriasNovas.size(), 0, erros.lista, erros.total, avisos.lista);
     }
 
-    /** Se vierem códigos no formato PREFIXO-NÚMERO (inclusive os do SAP, ex.: CIV-4057137), o contador da categoria não pode
-     *  ficar atrás deles: o próximo código gerado continua do último número da categoria. */
     private void sincronizarContadores(Iterable<Servico> importados) {
         Map<Long, Long> maximos = new HashMap<>();
         for (Servico s : importados) {
@@ -262,8 +265,6 @@ public class ImportacaoService {
             categoriaRepository.garantirUltimoNumero(e.getKey(), e.getValue());
         }
     }
-
-    // ------------------------------------------------------------------------------------------ VÍNCULOS
 
     @Transactional
     public Relatorio importarVinculos(byte[] bytes, boolean simular) {
@@ -283,7 +284,7 @@ public class ImportacaoService {
         }
         Map<String, StatusServico> statusPorCodigo = new HashMap<>();
         for (ServicoIndiceView v : servicoRepository.listarParaIndice()) statusPorCodigo.put(v.getCodigoServico(), v.getStatus());
-        // [PREFIXO] aceita o código completo (CIV-4057137) ou o código SAP sem prefixo (4057137), se for único
+
         Map<String, String> porCodigoSemPrefixo = new HashMap<>();
         Set<String> ambiguos = new HashSet<>();
         for (String completo : statusPorCodigo.keySet()) {
@@ -327,9 +328,8 @@ public class ImportacaoService {
         if (gravar) {
             for (Fornecedor f : novosFornecedores.values()) em.persist(f);
             fornecedores.putAll(novosFornecedores);
-            em.flush();   // garante que os fornecedores novos já têm id
-            // [PERFORMANCE] FornecedorServico usa id IDENTITY, e com IDENTITY o Hibernate NÃO agrupa os INSERTs:
-            // eram ~9 mil idas e voltas ao banco (muito lento no Supabase). Aqui vai tudo em lotes JDBC de 500.
+            em.flush();
+
             final List<Par> pares = new ArrayList<>(novosPares);
             final Map<String, Fornecedor> porCodigo = fornecedores;
             em.unwrap(org.hibernate.Session.class).doWork(conexao -> {
@@ -350,7 +350,6 @@ public class ImportacaoService {
                 0, novosFornecedores.size(), erros.lista, erros.total, avisos.lista);
     }
 
-    /** Excel às vezes exporta números como "4033776.0": tira o ".0" e os espaços. */
     private static String limparCodigo(String bruto) {
         String c = bruto == null ? "" : bruto.strip();
         return c.matches("\\d+\\.0+") ? c.substring(0, c.indexOf('.')) : c;

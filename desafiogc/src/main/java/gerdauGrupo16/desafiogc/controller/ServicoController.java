@@ -1,5 +1,21 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: ServicoController.java
+ * TIPO: controller REST (@RestController), rota /api/servicos.
+ * FUNÇÃO: API de consulta e de criação de serviços (JSON), usada pelo Swagger e por integrações. Serviços
+ *   REJEITADOS só são devolvidos ao administrador.
+ * MÉTODOS:
+ * - listar(pagina, tamanho, auth): GET /api/servicos. Lista paginada (padrão 100 por página, máximo 500).
+ * - buscarCategoriaNome_ServicoNome(categoriaNome, nomeServico, auth): GET
+ *   /api/servicos/categoriaNomeServico. Filtra por categoria e/ou nome.
+ * - buscar(nome, pagina, tamanho, auth): GET /api/servicos/busca. Busca por nome ou código.
+ * - sugestoes(categoriaId, nome): GET /api/servicos/sugestoes. Serviços parecidos com a nota da régua de
+ *   aderência (sem categoriaId compara com todas).
+ * - criarNovo(dto, principal): POST /api/servicos. Cria o serviço como PENDENTE. Respostas: 201, 400
+ *   validação, 404 categoria, 409 duplicado.
+ */
+
 import gerdauGrupo16.desafiogc.controller.dto.ServicoDTO;
 import gerdauGrupo16.desafiogc.controller.dto.SugestaoDTO;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
@@ -23,7 +39,6 @@ public class ServicoController {
         this.service = service;
     }
 
-    // paginado: com milhares de serviços, devolver tudo de uma vez seria lento. Ex.: /api/servicos?pagina=0&tamanho=100
     @GetMapping
     public List<Servico> listar(@RequestParam(defaultValue = "0") int pagina,
                                 @RequestParam(defaultValue = "100") int tamanho, Authentication auth) {
@@ -44,15 +59,12 @@ public class ServicoController {
         return service.listarPagina(nome, pagina, tamanho, PerfilAcesso.ehAdmin(auth)).getContent();
     }
 
-    // [NOVO, do Kaio] Régua de aderência. Ex.: GET /api/servicos/sugestoes?categoriaId=1&nome=Ajudante Geral
-    // (sem categoriaId compara com todas as categorias)
     @GetMapping("/sugestoes")
     public List<SugestaoDTO> sugestoes(@RequestParam(required = false) Long categoriaId,
                                        @RequestParam String nome) {
         return service.buscarSugestoes(categoriaId, nome);
     }
 
-    // [NOVO, do Kaio] Cria o serviço como PENDENTE. 201 | 400 validação | 404 categoria | 409 duplicado
     @PostMapping
     public ResponseEntity<Servico> criarNovo(@Valid @RequestBody ServicoDTO dto, Principal principal) {
         Servico criado = service.criarNovo(dto, principal.getName());

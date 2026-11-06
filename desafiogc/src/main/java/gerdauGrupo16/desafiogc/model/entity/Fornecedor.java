@@ -1,5 +1,15 @@
 package gerdauGrupo16.desafiogc.model.entity;
 
+/*
+ * ARQUIVO: Fornecedor.java
+ * TIPO: entidade JPA (tabela fornecedor). Getters e setters pelo Lombok.
+ * FUNÇÃO: empresa que atende serviços. Na base saneada o fornecedor tem só o código (anonimizado); o nome é
+ *   opcional.
+ * CAMPOS: id; codigoFornecedor (único); nomeFornecedor (opcional); vinculos (lista dos vínculos com
+ *   serviços, ignorada no JSON).
+ * MÉTODOS:
+ * - Fornecedor(codigoFornecedor): cria um fornecedor só com o código (usado pela importação de vínculos).
+ */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

@@ -1,5 +1,27 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: IndiceServicos.java
+ * TIPO: componente do Spring (@Component).
+ * FUNÇÃO: índice em memória de todos os serviços, com o perfil de texto já calculado, para a checagem de
+ *   duplicado e a busca levarem milissegundos. É recarregado na próxima consulta depois que um serviço é
+ *   criado, aprovado, reprovado ou importado. Se o banco for alterado por SQL, use Recarregar índice.
+ *   Limite do MVP: funciona para uma instância da aplicação.
+ * CLASSE INTERNA: Entrada (record) é um serviço no índice: código, nome, nome padronizado, categoria,
+ *   status e perfil de texto.
+ * MÉTODOS:
+ * - IndiceServicos(repository, regua): recebe o repositório e a régua.
+ * - entradas(): lista atual do índice (carrega se estiver vazio).
+ * - carregar(): lê o banco e monta o índice; não guarda a lista se alguém invalidou durante a carga.
+ * - invalidar(): descarta o índice agora.
+ * - invalidarAposCommit(): descarta o índice só depois do commit da transação, para ninguém recarregar
+ *   antes de o dado existir.
+ * - afterCommit() (método do callback interno): chama invalidar() quando o commit termina.
+ * - sugestoes(categoriaId, nome, max, minimo): serviços parecidos com o nome, com nota igual ou maior que o
+ *   mínimo, sem os REJEITADOS, da melhor para a pior.
+ * - padrao(texto): maiúsculas, sem acento, espaços simples.
+ */
+
 import gerdauGrupo16.desafiogc.controller.dto.SugestaoDTO;
 import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
 import gerdauGrupo16.desafiogc.repository.ServicoRepository;
@@ -15,16 +37,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Índice em memória de todos os serviços, com o perfil de texto (normalização, palavras, trigramas) JÁ calculado.
- *
- * Por quê: sem ele, cada checagem de duplicata lia e normalizava milhares de linhas. Com ele, a checagem
- * é só comparar o texto digitado com perfis prontos (cerca de 8 ms para ~8 mil serviços, medido com a base real).
- *
- * O índice é recarregado sozinho na próxima consulta depois que um serviço é criado, aprovado ou reprovado,
- * ou quando a importação termina. Se o banco for alterado por fora (SQL direto), use "Recarregar índice" no painel do admin.
- * Limite conhecido do MVP: funciona para UMA instância da aplicação.
- */
 @Component
 public class IndiceServicos {
 
@@ -53,7 +65,7 @@ public class IndiceServicos {
                 .map(s -> new Entrada(s.getCodigoServico(), s.getNomeServico(), padrao(s.getNomeServico()),
                         s.getCategoriaId(), s.getStatus(), regua.perfil(s.getNomeServico())))
                 .toList();
-        if (versao.get() == v) cache = lista;   // se alguém invalidou durante a carga, não guarda a lista velha
+        if (versao.get() == v) cache = lista;
         return lista;
     }
 
@@ -62,7 +74,6 @@ public class IndiceServicos {
         cache = null;
     }
 
-    /** Invalida só DEPOIS do commit (senão outra consulta poderia recarregar antes de o dado existir). */
     public void invalidarAposCommit() {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -76,7 +87,6 @@ public class IndiceServicos {
         }
     }
 
-    /** Serviços parecidos (nota >= minimo, de 0 a 1), ignorando os REJEITADOS. categoriaId = null compara com todas. */
     public List<SugestaoDTO> sugestoes(Long categoriaId, String nome, int max, double minimo) {
         PerfilTexto alvo = regua.perfil(nome);
         if (alvo.tokens().isEmpty()) return List.of();

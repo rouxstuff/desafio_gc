@@ -1,5 +1,16 @@
 package gerdauGrupo16.desafiogc.service.importacao;
 
+/*
+ * ARQUIVO: CsvLeitorTest.java
+ * TIPO: classe de teste (JUnit) de CsvLeitor.
+ * MÉTODOS:
+ * - normalizaCabecalhosDaPlanilhaOriginal(): cabeçalhos com acento viram minúsculos com sublinhado; o
+ *   número da linha conta o cabeçalho.
+ * - entendeAspasSeparadorDentroDoCampoEQuebraDeLinha(): campos entre aspas com separador, aspas e quebra de
+ *   linha.
+ * - lePortuguesDoExcelAntigoEBomDoUtf8(): lê Windows-1252 e UTF-8 com BOM.
+ */
+
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.Charset;

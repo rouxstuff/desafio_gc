@@ -1,5 +1,16 @@
 package gerdauGrupo16.desafiogc.service.importacao;
 
+/*
+ * ARQUIVO: CodigoComPrefixoTest.java
+ * TIPO: classe de teste (JUnit) de CodigoComPrefixo.
+ * MÉTODOS:
+ * - codigoExistenteGanhaOPrefixoSemMudar(): o código SAP só ganha o prefixo.
+ * - jaComPrefixoNaoDuplica(): código que já tem o prefixo não muda.
+ * - semPrefixoNaCategoriaDeixaComoEsta(): sem prefixo, o código fica como veio; nulo vira vazio.
+ * - maiorNumeroDaCategoriaIgnoraOutrosPrefixosEFormatosInvalidos(): acha o maior número da categoria,
+ *   ignorando outros prefixos e formatos inválidos.
+ */
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

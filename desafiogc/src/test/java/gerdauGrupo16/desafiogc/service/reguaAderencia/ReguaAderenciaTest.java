@@ -1,11 +1,27 @@
 package gerdauGrupo16.desafiogc.service.reguaAderencia;
 
+/*
+ * ARQUIVO: ReguaAderenciaTest.java
+ * TIPO: classe de teste (JUnit) de ReguaAderencia, com o dicionário real (regras.csv).
+ * MÉTODOS:
+ * - bloqueia(a, b): auxiliar; exige nota de 0,90 ou mais.
+ * - naoBloqueia(a, b): auxiliar; exige nota abaixo de 0,90.
+ * - mesmoNomeComSistemaEPontuacaoEhDuplicata(): prefixo SV e pontuação não diferenciam nomes.
+ * - medidaEscritaDeOutroJeitoEhDuplicata(): 25MM e 25 MM têm nota 1.
+ * - medidasDiferentesNuncaBloqueiamMasAindaSugerem(): 25MM e 50MM não bloqueiam, mas passam de 0,60.
+ * - horaExtraEHoraNormalSaoServicosDiferentes(): HE e HN não bloqueiam.
+ * - abreviacoesDoDicionarioViramDuplicata(): HE, DISP e PERIC do dicionário bloqueiam.
+ * - truncamentoEm40CaracteresBloqueia(): nome cortado bloqueia.
+ * - palavraRealmenteDiferenteOuAMaisSoSugere(): EXT x INT e palavra a mais não bloqueiam.
+ * - maiorEMenorQueSaoServicosDiferentes(): maior e menor que não bloqueiam.
+ * - nomesSemRelacaoTemNotaZero(): nomes sem relação dão 0.
+ */
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Casos reais da base da Gerdau. Limites do sistema: >= 0.90 bloqueia, >= 0.60 sugere. */
 class ReguaAderenciaTest {
 
     private final ReguaAderencia regua = new ReguaAderencia(new NormalizadorTexto());

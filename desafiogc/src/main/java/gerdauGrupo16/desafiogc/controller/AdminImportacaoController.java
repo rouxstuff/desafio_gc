@@ -1,5 +1,22 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: AdminImportacaoController.java
+ * TIPO: controller de telas (@Controller), rota /admin/importacao, restrito ao ADMIN.
+ * FUNÇÃO: tela do administrador para importar o catálogo saneado e os vínculos fornecedor x serviço por
+ *   arquivo CSV, e para recarregar o índice de busca em memória. A regra da importação fica em
+ *   ImportacaoService; aqui só se recebe o arquivo e se devolve o relatório para a tela.
+ * MÉTODOS:
+ * - tela(): abre a página admin/importacao.
+ * - servicos(arquivo, simular, model): recebe o CSV de serviços e chama ImportacaoService.importarServicos.
+ *   Com simular=true só valida, sem gravar.
+ * - vinculos(arquivo, simular, model): idem para o CSV de vínculos (ImportacaoService.importarVinculos).
+ * - reindexar(model): descarta o índice em memória (IndiceServicos.invalidar); a próxima consulta recarrega
+ *   do banco. Usar depois de alterar o banco por SQL ou o dicionário regras.csv.
+ * - processar(arquivo, model, acao): método auxiliar. Valida que há arquivo, executa a ação, coloca o
+ *   relatório (ou a mensagem de erro) no model e volta para a mesma página.
+ */
+
 import gerdauGrupo16.desafiogc.service.IndiceServicos;
 import gerdauGrupo16.desafiogc.service.importacao.ImportacaoService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,7 +31,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.function.Function;
 
-/** Tela do administrador para importar o catálogo saneado por CSV (serviços e vínculos). */
 @Controller
 @RequestMapping("/admin/importacao")
 @PreAuthorize("hasRole('ADMIN')")
@@ -45,7 +61,6 @@ public class AdminImportacaoController {
         return processar(arquivo, model, bytes -> importacao.importarVinculos(bytes, simular));
     }
 
-    /** Use depois de alterar o banco por fora (SQL direto) ou o dicionário normalizacao/regras.csv. */
     @PostMapping("/reindexar")
     public String reindexar(Model model) {
         indice.invalidar();

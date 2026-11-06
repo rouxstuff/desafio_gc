@@ -1,5 +1,39 @@
 package gerdauGrupo16.desafiogc.repository;
 
+/*
+ * ARQUIVO: ServicoRepository.java
+ * TIPO: interface de repositório (Spring Data JPA) da entidade Servico (chave: código).
+ * FUNÇÃO: todas as consultas de serviço. Os métodos terminados em StatusNot excluem um status (usado para
+ *   esconder REJEITADO de quem não é administrador).
+ * MÉTODOS:
+ * - findByNomeServicoContaining(nomeServico): serviços cujo nome contém o texto.
+ * - findByCategoria_CategoriaNomeAndNomeServicoContaining(categoriaNome, nomeServico): filtro por categoria
+ *   e nome.
+ * - findByCategoria_CategoriaNomeContaining(categoriaNome): filtro só por categoria.
+ * - existsByCategoria_IdAndNomeServico(categoriaId, nomeServico): diz se o nome já existe na categoria
+ *   (bloqueio de duplicata exata).
+ * - findByCategoria_IdAndStatusIn(categoriaId, status): serviços de uma categoria em certos status.
+ * - findByStatusIn(status): serviços em certos status.
+ * - findByStatusOrderByNomeServico(status): serviços de um status, por nome (fila de aprovação).
+ * - findByNomeServicoContainingOrCodigoServicoContaining(nome, codigo, pageable): página de serviços por
+ *   nome ou código (administrador, vê todos).
+ * - findByStatusNot(status, pageable): página sem um status.
+ * - buscarPaginaSemStatus(status, termo, pageable): página por nome ou código sem um status (usuário
+ *   comum).
+ * - findByNomeServicoContainingAndStatusNot(nomeServico, status): por nome, sem um status.
+ * - findByCategoria_CategoriaNomeAndNomeServicoContainingAndStatusNot(categoriaNome, nomeServico, status):
+ *   por categoria e nome, sem um status.
+ * - findByCategoria_CategoriaNomeContainingAndStatusNot(categoriaNome, status): por categoria, sem um
+ *   status.
+ * - findByStatusNot(status): todos sem um status.
+ * - listarParaIndice(): código, nome, categoria e status de todos os serviços, de forma leve (índice em
+ *   memória e importação).
+ * - listarOpcoes(status): código e nome dos serviços de um status, por nome (listas suspensas).
+ * - buscarOpcoes(status, termo, pageable): código e nome dos serviços de um status cujo nome ou código
+ *   contém o termo, limitado pelo pageable.
+ * - listarCodigos(): só os códigos de todos os serviços.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
 import org.springframework.data.domain.Page;
@@ -17,25 +51,18 @@ public interface ServicoRepository extends JpaRepository<Servico, String> {
 
     List<Servico> findByCategoria_CategoriaNomeAndNomeServicoContaining(String categoriaNome, String nomeServico);
 
-    // [NOVO, do Kaio] busca só por categoria
     List<Servico> findByCategoria_CategoriaNomeContaining(String categoriaNome);
 
-    // [NOVO, do Kaio] bloqueio de duplicata exata: mesmo nome na mesma categoria
     boolean existsByCategoria_IdAndNomeServico(Long categoriaId, String nomeServico);
 
-    // [NOVO, do Kaio] base da régua de aderência (uma categoria)
     List<Servico> findByCategoria_IdAndStatusIn(Long categoriaId, Collection<StatusServico> status);
 
-    // [NOVO] base da régua na tela de consulta, onde ainda não há categoria escolhida
     List<Servico> findByStatusIn(Collection<StatusServico> status);
 
-    // fila de aprovação do administrador
     List<Servico> findByStatusOrderByNomeServico(StatusServico status);
 
-    // catálogo paginado: busca por nome OU código (o chamador passa o mesmo termo nos dois)
     Page<Servico> findByNomeServicoContainingOrCodigoServicoContaining(String nome, String codigo, Pageable pageable);
 
-    // catálogo para quem não é administrador: sem os serviços de um status (REJEITADO)
     Page<Servico> findByStatusNot(StatusServico status, Pageable pageable);
 
     @Query("select s from Servico s where s.status <> :status "
@@ -50,18 +77,14 @@ public interface ServicoRepository extends JpaRepository<Servico, String> {
 
     List<Servico> findByStatusNot(StatusServico status);
 
-    // leve: 4 colunas de todos os serviços (índice em memória e validação da importação)
     @Query("select s.codigoServico as codigoServico, s.nomeServico as nomeServico, c.id as categoriaId, s.status as status "
          + "from Servico s left join s.categoria c")
     List<ServicoIndiceView> listarParaIndice();
 
-    // [PERFORMANCE] listas suspensas: só código e nome, 1 query, sem joins nem entidades
     @Query("select s.codigoServico as codigoServico, s.nomeServico as nomeServico "
          + "from Servico s where s.status = :status order by s.nomeServico")
     List<ServicoOpcaoView> listarOpcoes(@Param("status") StatusServico status);
 
-    // [BUSCA NOS VÍNCULOS] serviços do status informado cujo NOME ou CÓDIGO contém o termo (já em maiúsculas, sem acento).
-    // Mesma projeção leve; o Pageable limita a quantidade de resultados.
     @Query("select s.codigoServico as codigoServico, s.nomeServico as nomeServico "
          + "from Servico s where s.status = :status "
          + "and (upper(s.nomeServico) like concat('%', :termo, '%') "

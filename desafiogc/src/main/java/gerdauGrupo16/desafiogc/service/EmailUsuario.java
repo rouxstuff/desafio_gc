@@ -1,13 +1,19 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: EmailUsuario.java
+ * TIPO: classe utilitária (final, só métodos estáticos).
+ * FUNÇÃO: regras do e-mail usado como login: guardado em minúsculas e sem espaços nas pontas. A validação é
+ *   simples (algo@dominio.ext, até 254 caracteres); confirmar que a caixa existe só é possível enviando
+ *   e-mail.
+ * MÉTODOS:
+ * - normalizar(email): tira espaços e passa para minúsculas; nulo vira texto vazio.
+ * - valido(emailNormalizado): confere o formato e o tamanho.
+ */
+
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/**
- * Regras do e-mail usado como login: sempre guardado em minúsculas e sem espaços nas pontas,
- * então "Maria@Empresa.com " e "maria@empresa.com" são o mesmo usuário.
- * A validação é propositalmente simples (algo@dominio.ext): confirmar que a caixa existe só é possível enviando e-mail.
- */
 public final class EmailUsuario {
 
     public static final int MAX = 254;
@@ -19,7 +25,6 @@ public final class EmailUsuario {
         return email == null ? "" : email.strip().toLowerCase(Locale.ROOT);
     }
 
-    /** Recebe o e-mail já normalizado. */
     public static boolean valido(String emailNormalizado) {
         return emailNormalizado != null
                 && !emailNormalizado.isEmpty()

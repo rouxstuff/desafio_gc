@@ -1,5 +1,15 @@
 package gerdauGrupo16.desafiogc.model.unitys;
 
+/*
+ * ARQUIVO: UnidadeMedida.java
+ * TIPO: entidade JPA (tabela unidade_medida). Getters, setters e construtor vazio pelo Lombok.
+ * FUNÇÃO: unidade oficial de medida do serviço (H hora, M metro, M2, M3, KG, SV serviço, MON mês, ST
+ *   peça...).
+ * CAMPOS: id; codigo (sigla); descricao; servico (serviços que usam, ignorado no JSON).
+ * MÉTODOS:
+ * - UnidadeMedida(codigo, descricao): cria a unidade.
+ */
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import jakarta.persistence.*;

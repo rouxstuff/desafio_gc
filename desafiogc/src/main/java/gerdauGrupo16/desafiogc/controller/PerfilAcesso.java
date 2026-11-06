@@ -1,8 +1,16 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: PerfilAcesso.java
+ * TIPO: classe utilitária (final, construtor privado, só métodos estáticos). Visível apenas no pacote
+ *   controller.
+ * FUNÇÃO: responder às perguntas de perfil do usuário logado, em um só lugar.
+ * MÉTODOS:
+ * - ehAdmin(auth): verdadeiro se o usuário autenticado tem o perfil ROLE_ADMIN; falso para usuário nulo.
+ */
+
 import org.springframework.security.core.Authentication;
 
-/** Pergunta única "quem está logado é administrador?", usada pelas telas e pela API para decidir o que mostrar. */
 final class PerfilAcesso {
 
     private PerfilAcesso() { }

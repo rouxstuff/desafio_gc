@@ -1,5 +1,15 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: FornecedorServicoService.java
+ * TIPO: classe de serviço (@Service, construtor gerado pelo Lombok).
+ * FUNÇÃO: leituras dos vínculos fornecedor x serviço.
+ * MÉTODOS:
+ * - buscarTodos(): todos os vínculos.
+ * - buscarFornecedoresDoServico(codigoServico): fornecedores que atendem o serviço.
+ * - buscarVinculosServico(codigoServico): vínculos de um serviço.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.FornecedorServico;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.repository.FornecedorRepository;
@@ -19,12 +29,10 @@ public class FornecedorServicoService {
 
     private final FornecedorServicoRepository fornecedorServicoRepository;
 
-
     public List<FornecedorServico> buscarTodos(){
         return fornecedorServicoRepository.findAll();
     }
 
-    /** [PERFORMANCE] Fornecedores de um serviço, em uma query. */
     public List<gerdauGrupo16.desafiogc.model.entity.Fornecedor> buscarFornecedoresDoServico(String codigoServico){
         return fornecedorServicoRepository.listarFornecedoresDoServico(codigoServico);
     }

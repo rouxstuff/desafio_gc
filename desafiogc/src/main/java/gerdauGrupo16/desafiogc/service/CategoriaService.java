@@ -1,5 +1,15 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: CategoriaService.java
+ * TIPO: classe de serviço (@Service).
+ * FUNÇÃO: leitura de categorias.
+ * MÉTODOS:
+ * - buscarCategoriaNome(categoriaNome): categorias cujo nome contém o texto (padronizado).
+ * - listarTodasCategorias(): todas, em ordem decrescente de nome.
+ * - padronizar(texto): maiúsculas, sem acento, espaços simples.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Categoria;
 import gerdauGrupo16.desafiogc.repository.CategoriaRepository;
 import org.springframework.data.domain.Sort;
@@ -21,7 +31,6 @@ public class CategoriaService {
         return categoriaRepository.findByCategoriaNomeContaining(padronizar(categoriaNome));
     }
 
-    // [NOVO, do Kaio] usado pelo dropdown de categoria e pelo GET /categoria
     public List<Categoria> listarTodasCategorias() {
         return categoriaRepository.findAll(Sort.by(Sort.Direction.DESC, "categoriaNome"));
     }

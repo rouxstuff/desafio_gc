@@ -1,5 +1,23 @@
 package gerdauGrupo16.desafiogc.service.reguaAderencia;
 
+/*
+ * ARQUIVO: NormalizadorTexto.java
+ * TIPO: componente do Spring (@Component).
+ * FUNÇÃO: deixa o texto de um serviço numa forma padrão para comparar (não para exibir). Passos: maiúsculas
+ *   sem acento; > vira MAIOR e < vira MENOR; tira (A) de gênero; 50 % vira 50%; pontuação vira espaço;
+ *   dicionário de abreviações do arquivo normalizacao/regras.csv; 25 MM vira 25MM; tira o prefixo de
+ *   sistema (SV, EV, SERV); espaços simples.
+ * CLASSE INTERNA: Regra (record) é uma linha do dicionário: expressão regular e substituição.
+ * MÉTODOS:
+ * - NormalizadorTexto(): construtor usado pelo Spring; carrega o dicionário do classpath.
+ * - NormalizadorTexto(linhasDeRegras): construtor usado nos testes; recebe as regras prontas.
+ * - carregar(linhas): lê as regras (expressão;substituição) e a linha @modificadores; ignora vazias e
+ *   comentários.
+ * - modificadores(): palavras que diferenciam serviços (HE, HN, NOT, DF...).
+ * - semAcentos(texto): remove acentos.
+ * - normalizar(texto): aplica todos os passos e devolve o texto padrão.
+ */
+
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -15,13 +33,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/**
- * Deixa o texto de um serviço numa forma "canônica" para COMPARAR (não para exibir).
- *
- * Passos: maiúsculas e sem acento -> tira "(A)" de gênero -> "50 %" vira "50%" -> pontuação vira espaço
- * -> dicionário de abreviações (arquivo normalizacao/regras.csv) -> "25 MM" vira "25MM"
- * -> tira prefixo de sistema (SV, EV, SERV) -> espaços simples.
- */
 @Component
 public class NormalizadorTexto {
 
@@ -44,7 +55,6 @@ public class NormalizadorTexto {
     private final List<Regra> regras = new ArrayList<>();
     private final Set<String> modificadores = new LinkedHashSet<>();
 
-    /** Usado pelo Spring: carrega o dicionário do classpath. */
     public NormalizadorTexto() {
         try (InputStream in = NormalizadorTexto.class.getClassLoader().getResourceAsStream(ARQUIVO_REGRAS)) {
             if (in != null) {
@@ -57,7 +67,6 @@ public class NormalizadorTexto {
         }
     }
 
-    /** Usado em testes: regras passadas direto. */
     public NormalizadorTexto(List<String> linhasDeRegras) {
         carregar(linhasDeRegras);
     }
@@ -78,7 +87,6 @@ public class NormalizadorTexto {
         }
     }
 
-    /** Palavras (já canônicas) que diferenciam serviços: HE, HN, NOT... */
     public Set<String> modificadores() {
         return modificadores;
     }
@@ -90,7 +98,7 @@ public class NormalizadorTexto {
     public String normalizar(String texto) {
         if (texto == null) return "";
         String s = semAcentos(texto).toUpperCase();
-        s = s.replace(">", " MAIOR ").replace("<", " MENOR ");   // ">3 dias" e "<3 dias" são serviços diferentes
+        s = s.replace(">", " MAIOR ").replace("<", " MENOR ");
         s = GENERO.matcher(s).replaceAll("");
         s = PERCENTUAL.matcher(s).replaceAll("$1%");
         s = DECIMAL.matcher(s).replaceAll(",");

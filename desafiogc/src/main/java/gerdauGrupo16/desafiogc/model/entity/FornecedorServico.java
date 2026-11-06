@@ -1,20 +1,20 @@
 package gerdauGrupo16.desafiogc.model.entity;
 
+/*
+ * ARQUIVO: FornecedorServico.java
+ * TIPO: entidade JPA (tabela fornecedor_servico). Getters e setters pelo Lombok.
+ * FUNÇÃO: vínculo entre um fornecedor e um serviço do catálogo. Um serviço pode ter vários fornecedores sem
+ *   criar código duplicado. O par fornecedor + serviço é único no banco.
+ * CAMPOS: id; fornecedor; servico (ambos carregados sob demanda, LAZY).
+ * MÉTODOS:
+ * - FornecedorServico(fornecedor, servico): cria o vínculo.
+ */
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * [NOVO] Tabela de ligacao entre Fornecedor e Servico (muitos-para-muitos).
- *
- * Cada linha diz: "este fornecedor usa este servico".
- * Assim o servico existe UMA vez no catalogo e varios fornecedores podem se vincular a ele,
- * sem criar duplicatas.
- *
- * O unique (fornecedor_id, codigo_servico) impede o MESMO fornecedor de se vincular duas vezes
- * ao mesmo servico (aqui ele faz sentido, diferente de estar dentro da tabela servico).
- */
 @Entity
 @Table(name = "fornecedor_servico",
         uniqueConstraints = @UniqueConstraint(columnNames = {"fornecedor_id", "codigo_servico"}))

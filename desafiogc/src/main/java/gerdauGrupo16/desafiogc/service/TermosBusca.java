@@ -1,19 +1,22 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: TermosBusca.java
+ * TIPO: classe utilitária (final, só métodos estáticos).
+ * FUNÇÃO: pesquisa múltipla da Consulta: vários termos separados por ponto e vírgula. Tira espaços das
+ *   pontas, ignora termos vazios, conta uma vez só os repetidos (sem diferenciar maiúsculas nem acentos) e
+ *   vale no máximo 10 termos.
+ * MÉTODOS:
+ * - separar(digitado): devolve a lista de termos, mantendo o texto original e a ordem digitada.
+ * - chave(termo): forma comparável do termo (maiúsculas, sem acento, espaços simples).
+ */
+
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Pesquisa múltipla na tela de consulta: vários termos separados por ponto e vírgula.
- * Ex.: "Ajudante;Mecanico;Almoço" vira ["Ajudante", "Mecanico", "Almoço"].
- *
- * Regras: espaços nas pontas são tirados; termos vazios ("a;;b" ou "a;") são ignorados; termos repetidos
- * (sem diferenciar maiúsculas nem acentos) contam uma vez só; vale no máximo {@link #MAX_TERMOS} termos
- * (os primeiros), para uma digitação enorme não virar dezenas de buscas.
- */
 public final class TermosBusca {
 
     public static final char SEPARADOR = ';';
@@ -21,7 +24,6 @@ public final class TermosBusca {
 
     private TermosBusca() { }
 
-    /** Mantém o texto original de cada termo (para mostrar ao usuário) e a ordem em que foram digitados. */
     public static List<String> separar(String digitado) {
         if (digitado == null || digitado.isBlank()) return List.of();
         Map<String, String> unicos = new LinkedHashMap<>();
@@ -34,7 +36,6 @@ public final class TermosBusca {
         return new ArrayList<>(unicos.values());
     }
 
-    /** Mesma ideia do padronizar() do ServicoService: maiúsculas, sem acento, espaços simples. */
     private static String chave(String termo) {
         String semAcento = Normalizer.normalize(termo, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
         return semAcento.trim().replaceAll("\\s+", " ").toUpperCase();

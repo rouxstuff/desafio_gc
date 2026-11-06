@@ -1,5 +1,21 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: UnidadeCustoService.java
+ * TIPO: classe de serviço (@Service).
+ * FUNÇÃO: leitura das unidades de custo (adicionais) e agrupamento delas para a tela de detalhes, na ordem
+ *   Jornada, Noturno, Periculosidade, Insalubridade e Contratação.
+ * MÉTODOS:
+ * - UnidadeCustoService(repository): recebe o repositório.
+ * - listarTodasUnidadesCustos(): todas, em ordem alfabética.
+ * - listarTodos(): todas, sem ordem definida.
+ * - buscarPorIds(ids): as unidades dos ids marcados na tela (lista vazia se não marcou nenhum).
+ * - listarAdicionaisAgrupados(): mapa grupo -> adicionais, sem os grupos vazios e sem o item que não é mão
+ *   de obra.
+ * - grupoDe(maoDeObra): decide o grupo de um adicional pelo texto do nome; devolve null para o item que não
+ *   é mão de obra.
+ */
+
 import gerdauGrupo16.desafiogc.model.unitys.UnidadeCusto;
 import gerdauGrupo16.desafiogc.repository.UnidadeCustoRepository;
 import org.springframework.data.domain.Sort;
@@ -23,7 +39,6 @@ public class UnidadeCustoService {
         this.repository = repository;
     }
 
-    // [NOVO, do Kaio] ordenada por nome, usada pelo GET /unidades-custo
     public List<UnidadeCusto> listarTodasUnidadesCustos(){
         return repository.findAll(Sort.by(Sort.Direction.ASC, "maoDeObra"));
     }

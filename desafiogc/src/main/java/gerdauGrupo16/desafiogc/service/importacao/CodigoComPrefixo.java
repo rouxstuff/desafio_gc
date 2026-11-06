@@ -1,14 +1,21 @@
 package gerdauGrupo16.desafiogc.service.importacao;
 
-/**
- * Regra do código do serviço: PREFIXO-CODIGO (ex.: CIV-4057137). O código que já existe (SAP) é mantido
- * SEM alteração e só ganha o prefixo da categoria. Se já vier com o prefixo, nada muda (pode reimportar o arquivo).
+/*
+ * ARQUIVO: CodigoComPrefixo.java
+ * TIPO: classe utilitária (final, só métodos estáticos).
+ * FUNÇÃO: regra do código do serviço, PREFIXO-CÓDIGO (ex.: CIV-4057137). O código SAP existente é mantido e
+ *   só ganha o prefixo da categoria. Se já vier com o prefixo, nada muda, então o arquivo pode ser
+ *   reimportado.
+ * MÉTODOS:
+ * - maiorNumero(codigos, prefixo): maior número entre os códigos no formato PREFIXO-NÚMERO; 0 se não
+ *   houver.
+ * - aplicar(codigo, prefixo): devolve o código com o prefixo, sem duplicá-lo.
  */
+
 public final class CodigoComPrefixo {
 
     private CodigoComPrefixo() { }
 
-    /** Maior número dos códigos no formato PREFIXO-NÚMERO (ex.: FAC-4048071 -> 4048071). 0 se não houver nenhum. */
     public static long maiorNumero(Iterable<String> codigos, String prefixo) {
         if (prefixo == null || prefixo.isBlank()) return 0;
         String cabeca = prefixo.strip().toUpperCase() + "-";

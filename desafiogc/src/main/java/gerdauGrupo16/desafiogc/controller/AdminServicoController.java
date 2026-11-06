@@ -1,5 +1,21 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: AdminServicoController.java
+ * TIPO: controller de telas (@Controller), rota /admin/servicos, restrito ao ADMIN (regra de URL +
+ *   @PreAuthorize).
+ * FUNÇÃO: aba Serviços do administrador. Lista todos os serviços (inclusive rejeitados), com busca por nome
+ *   ou código, e permite alterar as características de um serviço: unidade de medida, unidade de custo e
+ *   descrição. O administrador não contrata serviço, por isso esta tela substitui o Catálogo para ele.
+ * MÉTODOS:
+ * - lista(q, pagina, model): lista paginada (50 por página) com busca opcional por nome ou código.
+ * - editar(codigo, model, redirect): abre a tela de alteração do serviço. Se o código não existir volta
+ *   para a lista com a mensagem de erro.
+ * - salvar(codigo, unidadeMedidaId, unidadeCustoId, descricaoServico, redirect): grava as alterações
+ *   (ServicoService.atualizarCaracteristicas) e volta para a tela do serviço com mensagem de sucesso ou de
+ *   erro.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.service.ServicoService;
 import gerdauGrupo16.desafiogc.service.UnidadeCustoService;
@@ -16,11 +32,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Aba "Serviços" do administrador: localiza um serviço e altera as características dele (unidade de medida,
- * unidade de custo e descrição). Também é para onde o administrador vai ao clicar num serviço do Catálogo,
- * já que o administrador não contrata serviço. Duas travas: regra de URL (SecurityConfiguration) e @PreAuthorize.
- */
 @Controller
 @RequestMapping("/admin/servicos")
 @PreAuthorize("hasRole('ADMIN')")
@@ -39,11 +50,10 @@ public class AdminServicoController {
         this.unidadeCustoService = unidadeCustoService;
     }
 
-    /** Lista com busca por nome ou código; cada linha leva para a tela de alteração. */
     @GetMapping
     public String lista(@RequestParam(value = "q", required = false) String q,
                         @RequestParam(value = "pagina", defaultValue = "0") int pagina, Model model) {
-        Page<Servico> resultado = servicoService.listarPagina(q, pagina, TAMANHO_PAGINA, true);   // o administrador vê todos, inclusive rejeitados
+        Page<Servico> resultado = servicoService.listarPagina(q, pagina, TAMANHO_PAGINA, true);
         model.addAttribute("servicos", resultado.getContent());
         model.addAttribute("q", q == null || q.isBlank() ? "" : q);
         model.addAttribute("paginaAtual", resultado.getNumber());

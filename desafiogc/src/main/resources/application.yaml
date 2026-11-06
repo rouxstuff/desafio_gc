@@ -16,12 +16,9 @@ spring:
         format_sql: true
         jdbc:
           batch_size: 50
-        order_inserts: true
+        order_inserts: true
+
   servlet:
     multipart:
       max-file-size: 20MB
       max-request-size: 20MB
-
-app:
-  # true = cria fornecedores, serviços e vínculos FICTÍCIOS de demonstração (só em banco vazio)
-  seed-demo: ${APP_SEED_DEMO:false}

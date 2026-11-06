@@ -1,5 +1,27 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: UsuarioService.java
+ * TIPO: classe de serviço (@Service).
+ * FUNÇÃO: gestão de usuários feita pelo administrador. Regras: e-mail válido e único; senha provisória de 8
+ *   a 72 bytes guardada só em BCrypt; perfil FORNECEDOR exige um fornecedor; ADMIN e COMPRADOR não têm
+ *   fornecedor; cada fornecedor tem no máximo um usuário.
+ * CLASSES INTERNAS: FornecedorLinha (record) é uma linha da lista de fornecedores com a quantidade de
+ *   usuários (rotulo() monta o texto código - nome); Painel (record) reúne usuários, fornecedores e
+ *   fornecedores sem usuário.
+ * MÉTODOS:
+ * - painel(): lê tudo o que a tela do administrador precisa.
+ * - criar(email, senha, perfil, fornecedorId): cria o usuário. 400 dado inválido, 404 fornecedor
+ *   inexistente, 409 e-mail já usado ou fornecedor que já tem usuário.
+ * - vincularFornecedor(usuarioId, fornecedorId): liga ou troca o fornecedor de um usuário de perfil
+ *   FORNECEDOR.
+ * - garantirFornecedorLivre(fornecedorId, usuarioIdPermitido): recusa (409) se outro usuário já usa o
+ *   fornecedor.
+ * - buscarFornecedor(id): acha o fornecedor ou 404.
+ * - validarSenha(senha): confere tamanho mínimo e máximo.
+ * - erro(status, mensagem): cria o erro HTTP.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.Usuario;
 import gerdauGrupo16.desafiogc.model.enumeration.Roles;
@@ -17,23 +39,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Gestão de usuários feita pelo administrador: criar usuário (login = e-mail) e vincular usuários de perfil
- * FORNECEDOR a um fornecedor que já existe na base saneada.
- *
- * Regras:
- *  - e-mail válido e único (sem diferenciar maiúsculas);
- *  - senha provisória de 8 a 72 bytes (limite do BCrypt), guardada só em BCrypt;
- *  - perfil FORNECEDOR exige um fornecedor; os outros perfis (ADMIN, COMPRADOR) não têm fornecedor;
- *  - cada fornecedor tem NO MÁXIMO UM usuário (e cada usuário Fornecedor tem um só fornecedor).
- */
 @Service
 public class UsuarioService {
 
     public static final int SENHA_MINIMA = 8;
     public static final int SENHA_MAXIMA_BYTES = 72;
 
-    /** Uma linha da lista de fornecedores, com quantos usuários já estão ligados a ele. */
     public record FornecedorLinha(Long id, String codigo, String nome, long usuarios) {
         public String rotulo() {
             String cod = codigo == null || codigo.isBlank() ? "(sem código)" : codigo;
@@ -41,7 +52,6 @@ public class UsuarioService {
         }
     }
 
-    /** Tudo o que a tela do administrador precisa, numa leitura só. */
     public record Painel(List<Usuario> usuarios, List<FornecedorLinha> fornecedores,
                          List<FornecedorLinha> fornecedoresSemUsuario) { }
 
@@ -72,7 +82,6 @@ public class UsuarioService {
         return new Painel(usuarios, fornecedores, semUsuario);
     }
 
-    /** Cria o usuário. 400 dado inválido | 404 fornecedor não existe | 409 e-mail já usado ou fornecedor que já tem usuário. */
     @Transactional
     public Usuario criar(String email, String senha, Roles perfil, Long fornecedorId) {
         String emailNormalizado = EmailUsuario.normalizar(email);
@@ -98,14 +107,12 @@ public class UsuarioService {
 
         Usuario usuario = new Usuario();
         usuario.setEmail(emailNormalizado);
-        usuario.setSenha(passwordEncoder.encode(senha));   // nunca guardar a senha pura
+        usuario.setSenha(passwordEncoder.encode(senha));
         usuario.getRoles().add(perfil);
         usuario.setFornecedor(fornecedor);
         return usuarioRepository.save(usuario);
     }
 
-    /** Liga (ou troca) o fornecedor de um usuário de perfil FORNECEDOR.
-     *  404 não existe | 409 perfil não é FORNECEDOR ou o fornecedor já tem outro usuário. */
     @Transactional
     public Usuario vincularFornecedor(Long usuarioId, Long fornecedorId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
@@ -117,12 +124,11 @@ public class UsuarioService {
             throw erro(HttpStatus.BAD_REQUEST, "Escolha o fornecedor.");
         }
         Fornecedor fornecedor = buscarFornecedor(fornecedorId);
-        garantirFornecedorLivre(fornecedor.getId(), usuario.getId());   // trocar para o mesmo fornecedor é permitido
-        usuario.setFornecedor(fornecedor);   // o JPA grava no commit (dirty checking)
+        garantirFornecedorLivre(fornecedor.getId(), usuario.getId());
+        usuario.setFornecedor(fornecedor);
         return usuario;
     }
 
-    /** Um fornecedor só pode ter um usuário. 409 se já houver outro usuário ligado a ele. */
     private void garantirFornecedorLivre(Long fornecedorId, Long usuarioIdPermitido) {
         usuarioRepository.findByFornecedor_Id(fornecedorId)
                 .filter(u -> !u.getId().equals(usuarioIdPermitido))

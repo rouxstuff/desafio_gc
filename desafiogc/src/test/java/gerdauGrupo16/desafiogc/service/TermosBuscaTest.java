@@ -1,5 +1,19 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: TermosBuscaTest.java
+ * TIPO: classe de teste (JUnit) de TermosBusca.
+ * MÉTODOS:
+ * - separaPorPontoEVirgula(): divide nos pontos e vírgulas.
+ * - tiraEspacosDasPontas(): remove espaços antes e depois de cada termo.
+ * - mantemEspacosDentroDoTermo(): preserva espaços internos.
+ * - ignoraTermosVazios(): descarta termos vazios.
+ * - semTermoNenhumDevolveListaVazia(): nulo, branco e só separadores dão lista vazia.
+ * - termosRepetidosContamUmaVezSemDiferenciarCaixaNemAcento(): remove repetidos.
+ * - umSoTermoContinuaFuncionando(): um termo sem separador continua igual.
+ * - limitaAoMaximoDeTermos(): vale no máximo MAX_TERMOS termos.
+ */
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

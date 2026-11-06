@@ -1,18 +1,20 @@
 package gerdauGrupo16.desafiogc.service.reguaAderencia;
 
+/*
+ * ARQUIVO: PerfilTexto.java
+ * TIPO: record.
+ * FUNÇÃO: tudo que a régua precisa de um nome, calculado uma vez (no índice) e não a cada comparação.
+ * CAMPOS: normalizado (texto padrão); tokens (palavras); numeros (palavras com dígito, como 25MM: trava de
+ *   medidas); modificadores (HE, HN, NOT...: trava de condição de trabalho); trigramas (pedaços de 3
+ *   letras, para tolerar erro de digitação e truncamento).
+ * MÉTODOS:
+ * - de(normalizado, palavrasModificadoras): monta o perfil a partir do texto já normalizado.
+ */
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Tudo que a régua precisa de um nome, calculado UMA vez (no carregamento do índice) e não a cada comparação.
- *
- * @param normalizado texto canônico (ver NormalizadorTexto)
- * @param tokens      palavras do texto normalizado
- * @param numeros     palavras com algum dígito (25MM, 50, 1/2...): a "trava" de medidas
- * @param modificadores palavras como HE, HN, NOT: a "trava" de condição de trabalho
- * @param trigramas   pedaços de 3 letras, para tolerar erro de digitação e truncamento
- */
 public record PerfilTexto(String normalizado, Set<String> tokens, Set<String> numeros,
                           Set<String> modificadores, Set<String> trigramas) {
 

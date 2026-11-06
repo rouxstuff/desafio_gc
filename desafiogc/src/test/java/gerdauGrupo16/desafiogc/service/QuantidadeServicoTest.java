@@ -1,5 +1,17 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: QuantidadeServicoTest.java
+ * TIPO: classe de teste (JUnit) de QuantidadeServico.
+ * MÉTODOS:
+ * - pecaAceitaSoInteiro(): ST, SV e ZCJ aceitam inteiro e recusam decimal.
+ * - pesoEMedidaAceitamDecimalComVirgula(): KG, TO e M3 aceitam vírgula, até 3 casas.
+ * - rejeitaPontoZeroNegativoELetras(): recusa ponto, zero, negativo, letras e valor acima do máximo.
+ * - obrigatoriaEOpcional(): quantidade em branco só é erro quando obrigatória; sem unidade, quantidade
+ *   informada é erro.
+ * - formataComVirgula(): 10.000 vira 10 e 2.50 vira 2,5.
+ */
+
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -39,7 +51,7 @@ class QuantidadeServicoTest {
         assertEquals("Informe a quantidade.", QuantidadeServico.validar("  ", "ST", true).erro());
         assertNull(QuantidadeServico.validar("", "ST", false).erro());
         assertNull(QuantidadeServico.validar(null, null, false).valor());
-        assertNotNull(QuantidadeServico.validar("4", null, false).erro());   // quantidade sem unidade
+        assertNotNull(QuantidadeServico.validar("4", null, false).erro());
     }
 
     @Test

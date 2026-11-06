@@ -1,21 +1,33 @@
 package gerdauGrupo16.desafiogc.service.reguaAderencia;
 
+/*
+ * ARQUIVO: ReguaAderencia.java
+ * TIPO: componente do Spring (@Component).
+ * FUNÇÃO: nota de 0 a 1 entre dois nomes de serviço. Nota base: a maior entre palavras em comum (Jaccard),
+ *   um nome dentro do outro (0,8) e semelhança de letras (Dice sobre trigramas). Mesmas palavras em
+ *   qualquer ordem dão 1. Travas: números ou modificadores diferentes limitam a nota a 0,89
+ *   (TETO_COM_TRAVA), então nunca bloqueia (o bloqueio começa em 0,90) mas ainda sugere. Só bloqueia quando
+ *   as palavras que diferem são variações de grafia (truncamento ou erro de digitação).
+ * MÉTODOS:
+ * - ReguaAderencia(normalizador): recebe o normalizador.
+ * - perfil(texto): calcula o perfil de um nome (use para o digitado e para o índice).
+ * - calcular(a, b) com textos: atalho que calcula os perfis e compara.
+ * - calcular(a, b) com perfis: a nota de 0 a 1.
+ * - diferencasSaoGrafia(a, b): verdadeiro se as palavras que sobram em cada lado são, par a par, variações
+ *   de grafia.
+ * - parecidas(x, y): duas palavras iguais com erro: uma é começo da outra ou há 1 letra de diferença (2 em
+ *   palavras de 8 letras ou mais). Palavras com número nunca contam.
+ * - distancia(x, y): distância de edição (Levenshtein) entre duas palavras.
+ * - jaccard(a, b): proporção de palavras em comum.
+ * - dice(a, b): proporção de trigramas em comum.
+ */
+
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Régua de aderência (nota de 0.0 a 1.0 entre dois nomes de serviço).
- *
- * Nota base = a maior entre: palavras em comum (Jaccard), "um nome está dentro do outro" (0.8)
- * e semelhança de letras (Dice sobre trigramas, que pega erro de digitação e nome truncado).
- *
- * TRAVAS (como na análise da trilha IA & Dados): se os números/medidas OU os modificadores (HE, HN, NOT...)
- * forem diferentes, a nota fica limitada a 0.89, então NUNCA bloqueia (o bloqueio começa em 0.90),
- * mas ainda pode aparecer como sugestão. Ex.: TUBO 25MM x TUBO 50MM, AJUDANTE HE x AJUDANTE HN.
- */
 @Component
 public class ReguaAderencia {
 
@@ -27,29 +39,26 @@ public class ReguaAderencia {
         this.normalizador = normalizador;
     }
 
-    /** Calcula uma vez o perfil de um nome (use para o texto digitado e para o índice). */
     public PerfilTexto perfil(String texto) {
         return PerfilTexto.de(normalizador.normalizar(texto), normalizador.modificadores());
     }
 
-    /** Atalho: recebe textos crus (usado em testes e chamadas avulsas). */
     public double calcular(String a, String b) {
         return calcular(perfil(a), perfil(b));
     }
 
     public double calcular(PerfilTexto a, PerfilTexto b) {
         if (a.tokens().isEmpty() || b.tokens().isEmpty()) return 0.0;
-        if (a.tokens().equals(b.tokens())) return 1.0;            // mesmas palavras, em qualquer ordem
+        if (a.tokens().equals(b.tokens())) return 1.0;
 
         double nota = Math.max(jaccard(a.tokens(), b.tokens()), dice(a.trigramas(), b.trigramas()));
         if (a.tokens().containsAll(b.tokens()) || b.tokens().containsAll(a.tokens())) {
-            nota = Math.max(nota, 0.8);                           // um nome está dentro do outro
+            nota = Math.max(nota, 0.8);
         }
         if (!a.numeros().equals(b.numeros()) || !a.modificadores().equals(b.modificadores())) {
             nota = Math.min(nota, TETO_COM_TRAVA);
         }
-        // Só BLOQUEIA (>= 0.90) quando as palavras que diferem são variações de grafia (erro de digitação
-        // ou truncamento em 40 caracteres). Palavra realmente diferente (EXT x INT) ou palavra a mais vira só sugestão.
+
         if (nota > TETO_COM_TRAVA && !diferencasSaoGrafia(a.tokens(), b.tokens())) {
             nota = TETO_COM_TRAVA;
         }
@@ -73,7 +82,6 @@ public class ReguaAderencia {
         return true;
     }
 
-    /** Duas palavras "iguais com erro": uma é começo da outra (truncamento) ou há 1 letra de diferença (2 em palavras longas). */
     private static boolean parecidas(String x, String y) {
         if (x.equals(y)) return true;
         if (x.chars().anyMatch(Character::isDigit) || y.chars().anyMatch(Character::isDigit)) return false;

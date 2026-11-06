@@ -1,5 +1,17 @@
 package gerdauGrupo16.desafiogc.service;
 
+/*
+ * ARQUIVO: FornecedorService.java
+ * TIPO: classe de serviço (@Service).
+ * FUNÇÃO: regras de fornecedor e do vínculo com serviços.
+ * MÉTODOS:
+ * - buscarTodos(): todos os fornecedores.
+ * - buscarCodigoFornecedor(codigoFornecedor): fornecedores com o código informado.
+ * - vincularServico(fornecedorId, codigoServico): vincula o fornecedor a um serviço do catálogo. 404 se
+ *   algum não existe; 409 se o serviço não está APROVADO ou se o vínculo já existe.
+ * - listarServicosDoFornecedor(fornecedorId): serviços do fornecedor (404 se o fornecedor não existe).
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.FornecedorServico;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
@@ -18,7 +30,7 @@ import java.util.List;
 public class FornecedorService {
 
     private final FornecedorRepository fornecedorRepository;
-    // [NOVO, do Kaio] usados pelos métodos de vínculo abaixo
+
     private final ServicoRepository servicoRepository;
     private final FornecedorServicoRepository fornecedorServicoRepository;
 
@@ -38,8 +50,6 @@ public class FornecedorService {
         return fornecedorRepository.findByCodigoFornecedor(codigoFornecedor);
     }
 
-    /** [NOVO, do Kaio] Vincula um fornecedor a um serviço do catálogo.
-     *  404 se algum não existe | 409 se já vinculado ou se o serviço não está APROVADO. */
     @Transactional
     public void vincularServico(Long fornecedorId, String codigoServico) {
         Fornecedor fornecedor = fornecedorRepository.findById(fornecedorId)
@@ -47,7 +57,6 @@ public class FornecedorService {
         Servico servico = servicoRepository.findById(codigoServico)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado."));
 
-        // Só serviço APROVADO pode ser vinculado (PENDENTE/REJEITADO ainda não valem).
         if (servico.getStatus() != StatusServico.APROVADO) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "O serviço " + codigoServico + " está "
                     + servico.getStatus() + ". Só serviços APROVADOS podem ser vinculados a fornecedores.");

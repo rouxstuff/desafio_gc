@@ -1,5 +1,25 @@
 package gerdauGrupo16.desafiogc.controller;
 
+/*
+ * ARQUIVO: CatalogoPaginaController.java
+ * TIPO: controller de telas (@Controller).
+ * FUNÇÃO: duas telas. (1) /catalogo: lista de todos os serviços com status, para comprador e fornecedor.
+ *   (2) /vinculos: o administrador liga fornecedores a serviços APROVADOS e consulta quem atende cada
+ *   serviço. Não tem regra de negócio: tudo vem dos services.
+ * CLASSE INTERNA: LinhaFornecedor (id e rótulo) é o item da lista suspensa de fornecedores.
+ * MÉTODOS:
+ * - catalogo(q, pagina, auth, model): catálogo paginado (50 por página) com busca por nome ou código, sem
+ *   os serviços rejeitados. O administrador é redirecionado para /admin/servicos.
+ * - vinculos(servicoFiltro, busca, model): abre a tela de vínculos. Tem barra de pesquisa por nome ou
+ *   código (até 50 resultados, só serviços aprovados); se a busca achar um serviço só, ele já abre. Mostra
+ *   os fornecedores do serviço escolhido.
+ * - vincular(fornecedorId, codigoServico, redirect): cria o vínculo (FornecedorService.vincularServico) e
+ *   volta para a tela com sucesso ou erro.
+ * - montarFornecedores(): monta a lista de fornecedores (id e rótulo) ordenada por id.
+ * - rotulo(f): texto do fornecedor na tela: Fornecedor ID - nome, ou Fornecedor ID (8 primeiros caracteres
+ *   do código) quando não há nome.
+ */
+
 import gerdauGrupo16.desafiogc.model.entity.Fornecedor;
 import gerdauGrupo16.desafiogc.model.entity.Servico;
 import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
@@ -23,12 +43,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * [NOVO] Duas telas extras no estilo da Fernanda:
- *  - /catalogo : todos os serviços com o status (PENDENTE / APROVADO / REJEITADO)
- *  - /vinculos : liga fornecedores a serviços APROVADOS (um serviço pode ter vários fornecedores)
- * Sem regra de negócio aqui: tudo vem dos services (a regra "só APROVADO" está no FornecedorService).
- */
 @Controller
 @AllArgsConstructor
 public class CatalogoPaginaController {
@@ -44,12 +58,12 @@ public class CatalogoPaginaController {
     public String catalogo(@RequestParam(value = "q", required = false) String q,
                            @RequestParam(value = "pagina", defaultValue = "0") int pagina,
                            Authentication auth, Model model) {
-        // o administrador não usa o Catálogo: a aba Serviços lista o mesmo e permite alterar
+
         if (PerfilAcesso.ehAdmin(auth)) {
             return "redirect:/admin/servicos" + (q == null || q.isBlank() ? "" : "?q=" + java.net.URLEncoder.encode(q, java.nio.charset.StandardCharsets.UTF_8));
         }
-        Page<Servico> resultado = servicoService.listarPagina(q, pagina, TAMANHO_PAGINA, false);   // rejeitados não aparecem para o usuário
-        // a consulta já exclui os rejeitados; este filtro é uma segunda trava, independente do banco
+        Page<Servico> resultado = servicoService.listarPagina(q, pagina, TAMANHO_PAGINA, false);
+
         model.addAttribute("servicos", resultado.getContent().stream()
                 .filter(s -> ServicoService.visivelPara(s, false)).toList());
         model.addAttribute("q", q == null || q.isBlank() ? "" : q);
@@ -66,24 +80,22 @@ public class CatalogoPaginaController {
         model.addAttribute("fornecedores", montarFornecedores());
         model.addAttribute("servicosVinculaveis", servicoService.listarOpcoesPorStatus(StatusServico.APROVADO));
 
-        // [BUSCA] barra de pesquisa por nome ou código (só serviços APROVADOS, no máximo 50 resultados)
         boolean buscou = busca != null && !busca.isBlank();
         model.addAttribute("busca", buscou ? busca.strip() : "");
         if (buscou) {
             List<ServicoOpcaoView> achados = servicoService.buscarOpcoes(StatusServico.APROVADO, busca, MAX_RESULTADOS_BUSCA);
             model.addAttribute("resultadosBusca", achados);
-            // só um resultado e nenhum escolhido ainda: já abre direto
+
             if ((servicoFiltro == null || servicoFiltro.isBlank()) && achados.size() == 1) {
                 servicoFiltro = achados.get(0).getCodigoServico();
             }
         }
 
-        // só busca os fornecedores se um serviço foi escolhido
         if (servicoFiltro != null && !servicoFiltro.isBlank()) {
             servicoService.buscarPorCodigo(servicoFiltro).ifPresent(s ->
                     model.addAttribute("servicoSelecionado", s.getCodigoServico() + " - " + s.getNomeServico()));
             List<String> vinculados = fornecedorServicoService.buscarFornecedoresDoServico(servicoFiltro).stream()
-                    .map(this::rotulo)   // reaproveita o seu método rotulo()
+                    .map(this::rotulo)
                     .toList();
             model.addAttribute("fornecedoresVinculados", vinculados);
         }
@@ -109,16 +121,14 @@ public class CatalogoPaginaController {
         return "redirect:/vinculos";
     }
 
-
     private List<LinhaFornecedor> montarFornecedores() {
         return fornecedorService.buscarTodos().stream()
                 .sorted(Comparator.comparing(Fornecedor::getId))
-                // [PERFORMANCE] antes: 1 consulta por fornecedor (e 1 por vínculo) só para montar uma lista que a tela não usa
+
                 .map(f -> new LinhaFornecedor(f.getId(), rotulo(f)))
                 .toList();
     }
 
-    /** O código do fornecedor no seed é um UUID enorme; na tela mostramos só o começo. */
     private String rotulo(Fornecedor f) {
         if (f.getNomeFornecedor() != null && !f.getNomeFornecedor().isBlank()) {
             return "Fornecedor " + f.getId() + " - " + f.getNomeFornecedor();
