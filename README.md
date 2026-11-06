@@ -1,5 +1,5 @@
 <p align='center'>
-    <img src='./assets/logo-gerdau.png' width='150'/>
+    <img src='./Python-DiagnosticoGerdau/assets/logo-gerdau.png' width='150'/>
 </p>
 
 # DESAFIO GC 2026 - GRUPO 16
