@@ -11,23 +11,26 @@ package gerdauGrupo16.desafiogc.service;
  *   candidatos, de qual termo cada serviço veio e termos sem resultado.
  * MÉTODOS:
  * - listarTodos(): todos os serviços.
- * - visivelPara(servico, admin): regra de visibilidade; REJEITADO só o administrador vê.
- * - listarPagina(q, pagina, tamanho, incluirRejeitados): catálogo paginado (máximo 500 por página), por
+ * - visivelPara(servico, admin): regra de visibilidade; quem não é administrador só vê serviço APROVADO
+ *   (PENDENTE e REJEITADO ficam escondidos).
+ * - listarPagina(q, pagina, tamanho, admin): catálogo paginado (máximo 500 por página), por
  *   nome ou código, ordenado por nome.
  * - buscarPorNome(nome): serviços cujo nome contém o texto.
- * - buscarPorCategoriaNomeEServicoNome(categoriaNome, nomeServico, incluirRejeitados): filtra por categoria
+ * - buscarPorCategoriaNomeEServicoNome(categoriaNome, nomeServico, admin): filtra por categoria
  *   e/ou nome; aceita só um dos dois.
  * - buscarPorCodigo(codigo): acha pelo código, a chave do serviço.
- * - buscarCandidatos(digitado, incluirRejeitados): candidatos da tela de consulta usando o índice em
+ * - buscarCandidatos(digitado, admin): candidatos da tela de consulta usando o índice em
  *   memória (nome contém o digitado ou vice-versa, também na forma normalizada, assim H EXTRA acha HORA
  *   EXTRA). Até 50.
- * - buscarMultiplo(digitado, incluirRejeitados): pesquisa vários termos separados por ponto e vírgula e
+ * - buscarMultiplo(digitado, admin): pesquisa vários termos separados por ponto e vírgula e
  *   junta os resultados sem repetir.
  * - buscarSugestoes(categoriaId, nome): serviços parecidos com a nota da régua; categoriaId nulo compara
  *   com todas.
  * - similares(nome): sugestões de todas as categorias (tela não encontrado e cadastro).
  * - criarNovo(dto, solicitante): cria o serviço PENDENTE. Recusa nome acima de 40 (400), categoria
- *   inexistente (404), mesmo nome na categoria (409) e nota de 90% ou mais na mesma categoria (409). O
+ *   inexistente (404), mesmo nome na categoria (409), mesmo nome em outra categoria (409, com o mesmo
+ *   aviso, citando a categoria onde ele já existe; serviços reprovados não contam) e nota de 90% ou mais na
+ *   mesma categoria (409). O
  *   código só é gerado depois das validações.
  * - gerarCodigo(categoria): monta PREFIXO-NÚMERO continuando do maior número da categoria, com o contador
  *   do banco, e pula números que já existem.
@@ -111,45 +114,45 @@ public class ServicoService {
     }
 
     public static boolean visivelPara(Servico servico, boolean admin) {
-        return admin || servico.getStatus() != StatusServico.REJEITADO;
+        return admin || servico.getStatus() == StatusServico.APROVADO;
     }
 
     @Transactional(readOnly = true)
-    public Page<Servico> listarPagina(String q, int pagina, int tamanho, boolean incluirRejeitados) {
+    public Page<Servico> listarPagina(String q, int pagina, int tamanho, boolean admin) {
         Pageable pageable = PageRequest.of(Math.max(pagina, 0), Math.min(Math.max(tamanho, 1), 500), Sort.by("nomeServico"));
         if (q == null || q.isBlank()) {
-            return incluirRejeitados ? repository.findAll(pageable) : repository.findByStatusNot(StatusServico.REJEITADO, pageable);
+            return admin ? repository.findAll(pageable) : repository.findByStatus(StatusServico.APROVADO, pageable);
         }
         String termo = padronizar(q);
-        return incluirRejeitados
+        return admin
                 ? repository.findByNomeServicoContainingOrCodigoServicoContaining(termo, termo, pageable)
-                : repository.buscarPaginaSemStatus(StatusServico.REJEITADO, termo, pageable);
+                : repository.buscarPaginaPorStatus(StatusServico.APROVADO, termo, pageable);
     }
 
     public List<Servico> buscarPorNome(String nome) {
         return repository.findByNomeServicoContaining(padronizar(nome));
     }
 
-    public List<Servico> buscarPorCategoriaNomeEServicoNome(String categoriaNome, String nomeServico, boolean incluirRejeitados) {
+    public List<Servico> buscarPorCategoriaNomeEServicoNome(String categoriaNome, String nomeServico, boolean admin) {
         boolean temCategoria = categoriaNome != null && !categoriaNome.isBlank();
         boolean temNome = nomeServico != null && !nomeServico.isBlank();
-        StatusServico fora = StatusServico.REJEITADO;
+        StatusServico visivel = StatusServico.APROVADO;
         if (temCategoria && temNome) {
-            return incluirRejeitados
+            return admin
                     ? repository.findByCategoria_CategoriaNomeAndNomeServicoContaining(padronizar(categoriaNome), padronizar(nomeServico))
-                    : repository.findByCategoria_CategoriaNomeAndNomeServicoContainingAndStatusNot(padronizar(categoriaNome), padronizar(nomeServico), fora);
+                    : repository.findByCategoria_CategoriaNomeAndNomeServicoContainingAndStatus(padronizar(categoriaNome), padronizar(nomeServico), visivel);
         }
         if (temCategoria) {
-            return incluirRejeitados
+            return admin
                     ? repository.findByCategoria_CategoriaNomeContaining(padronizar(categoriaNome))
-                    : repository.findByCategoria_CategoriaNomeContainingAndStatusNot(padronizar(categoriaNome), fora);
+                    : repository.findByCategoria_CategoriaNomeContainingAndStatus(padronizar(categoriaNome), visivel);
         }
         if (temNome) {
-            return incluirRejeitados
+            return admin
                     ? repository.findByNomeServicoContaining(padronizar(nomeServico))
-                    : repository.findByNomeServicoContainingAndStatusNot(padronizar(nomeServico), fora);
+                    : repository.findByNomeServicoContainingAndStatus(padronizar(nomeServico), visivel);
         }
-        return incluirRejeitados ? repository.findAll() : repository.findByStatusNot(fora);
+        return admin ? repository.findAll() : repository.findByStatus(visivel);
     }
 
     public Optional<Servico> buscarPorCodigo(String codigo) {
@@ -157,13 +160,13 @@ public class ServicoService {
         return repository.findById(codigo.trim());
     }
 
-    public List<Servico> buscarCandidatos(String digitado, boolean incluirRejeitados) {
+    public List<Servico> buscarCandidatos(String digitado, boolean admin) {
         String dPad = padronizar(digitado);
         if (dPad.isEmpty()) return new ArrayList<>();
         String dNorm = regua.perfil(digitado).normalizado();
 
         List<String> codigos = indice.entradas().stream()
-                .filter(e -> incluirRejeitados || e.status() != StatusServico.REJEITADO)
+                .filter(e -> admin || e.status() == StatusServico.APROVADO)
                 .filter(e -> e.nomePadrao().contains(dPad) || dPad.contains(e.nomePadrao())
                         || (!dNorm.isEmpty() && !e.perfil().normalizado().isEmpty()
                             && (e.perfil().normalizado().contains(dNorm) || dNorm.contains(e.perfil().normalizado()))))
@@ -179,13 +182,13 @@ public class ServicoService {
     public record BuscaMultipla(List<String> termos, List<Servico> candidatos,
                                 Map<String, List<String>> termosPorCodigo, List<String> semResultado) { }
 
-    public BuscaMultipla buscarMultiplo(String digitado, boolean incluirRejeitados) {
+    public BuscaMultipla buscarMultiplo(String digitado, boolean admin) {
         List<String> termos = TermosBusca.separar(digitado);
         Map<String, Servico> unicos = new LinkedHashMap<>();
         Map<String, List<String>> termosPorCodigo = new LinkedHashMap<>();
         List<String> semResultado = new ArrayList<>();
         for (String termo : termos) {
-            List<Servico> achados = buscarCandidatos(termo, incluirRejeitados);
+            List<Servico> achados = buscarCandidatos(termo, admin);
             if (achados.isEmpty()) semResultado.add(termo);
             for (Servico s : achados) {
                 unicos.putIfAbsent(s.getCodigoServico(), s);
@@ -219,6 +222,13 @@ public class ServicoService {
 
         if (repository.existsByCategoria_IdAndNomeServico(categoria.getId(), nome)) {
             throw conflito("Já existe um serviço com este nome na categoria " + categoria.getCategoriaNome() + ".");
+        }
+
+        Optional<Servico> mesmoNomeEmOutra = repository.findFirstByNomeServicoIgnoreCaseAndStatusNot(nome, StatusServico.REJEITADO);
+        if (mesmoNomeEmOutra.isPresent()) {
+            Servico existente = mesmoNomeEmOutra.get();
+            throw conflito("Já existe um serviço com este nome na categoria " + existente.getCategoria().getCategoriaNome()
+                    + " (" + existente.getCodigoServico() + ").");
         }
 
         List<SugestaoDTO> parecidos = buscarSugestoes(categoria.getId(), nome);

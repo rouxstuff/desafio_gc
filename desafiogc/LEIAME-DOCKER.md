@@ -15,6 +15,12 @@ docker compose up -d --build
 - Acompanhe: `docker compose logs -f` (procure `>>> Serviços restaurados: 7324` e `Started DesafiogcApplication`).
 - Abra **http://localhost:8080**
 
+## Limpeza dos almoços duplicados
+O arquivo `db/02-limpar-almoco-duplicado.sql` roda sozinho na primeira subida e remove 8 serviços `ALMOCO PREMIUM` duplicados (séries 03 e 04), mantendo a série 02. Se o banco já estava criado antes, aplique uma vez:
+```bash
+docker compose exec -T db psql -U gerdau -d desafiogc < db/02-limpar-almoco-duplicado.sql
+```
+
 ## Primeiro acesso
 | Perfil | Login | Senha inicial |
 |---|---|---|

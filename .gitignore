@@ -1,2 +1,28 @@
 .DS_Store
 .idea/
+
+# Segredos (nunca subir; suba só o .env.example)
+.env
+*.env
+!.env.example
+
+# Compilação
+target/
+*.class
+*.jar
+*.war
+
+# Logs
+*.log
+logs/
+
+# Editores
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
+
+# Maven wrapper baixado
+.mvn/wrapper/maven-wrapper.jar

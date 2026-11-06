@@ -7,8 +7,8 @@ package gerdauGrupo16.desafiogc.controller;
  *   com serviço fica na tela de contratações (ContratacaoController). Não tem regra de negócio: tudo vem dos
  *   services.
  * MÉTODOS:
- * - catalogo(q, pagina, auth, model): catálogo paginado (50 por página) com busca por nome ou código, sem
- *   os serviços rejeitados. O administrador é redirecionado para /admin/servicos.
+ * - catalogo(q, pagina, auth, model): catálogo paginado (50 por página) com busca por nome ou código, só
+ *   com serviços APROVADOS. O administrador é redirecionado para /admin/servicos.
  */
 
 import gerdauGrupo16.desafiogc.model.entity.Servico;

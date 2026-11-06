@@ -11,8 +11,9 @@ package gerdauGrupo16.desafiogc.controller;
  * - consultar(nomeServico, auth, model, redirect): tela de busca. Aceita vários termos separados por ponto
  *   e vírgula (lista combinada). Com um termo: nenhum resultado abre Serviço não encontrado; um resultado
  *   abre direto os detalhes; vários mostram a lista.
- * - detalhes(codigo, digitado, auth, model): tela de detalhes e confirmação do serviço. Serviço rejeitado
- *   não abre para quem não é administrador.
+ * - detalhes(codigo, digitado, auth, model): tela de detalhes e confirmação do serviço. Só serviço
+ *   APROVADO abre para quem não é administrador; pendente e rejeitado voltam para a consulta. O mesmo vale
+ *   para confirmar.
  * - ehAdmin(auth): atalho para PerfilAcesso.ehAdmin.
  * - modoContrato(servico, admin): verdadeiro quando o serviço está APROVADO e o usuário não é admin; nesse
  *   modo a unidade de medida vem do catálogo e não pode ser escolhida.
@@ -201,6 +202,9 @@ public class ConsultaPaginaController {
         }
         Servico servico = achado.get();
         boolean admin = false;
+        if (servico.getStatus() != StatusServico.APROVADO) {
+            return "redirect:/servicos";
+        }
 
         boolean contrato = modoContrato(servico, admin);
         UnidadeMedida unidade = contrato ? servico.getUnidadeMedida() : buscarUnidade(unidadeMedidaId);

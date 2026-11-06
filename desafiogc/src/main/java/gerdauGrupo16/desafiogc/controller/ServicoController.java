@@ -4,7 +4,7 @@ package gerdauGrupo16.desafiogc.controller;
  * ARQUIVO: ServicoController.java
  * TIPO: controller REST (@RestController), rota /api/servicos.
  * FUNÇÃO: API de consulta e de criação de serviços (JSON), usada pelo Swagger e por integrações. Serviços
- *   REJEITADOS só são devolvidos ao administrador.
+ *   Quem não é administrador recebe só os APROVADOS.
  * MÉTODOS:
  * - listar(pagina, tamanho, auth): GET /api/servicos. Lista paginada (padrão 100 por página, máximo 500).
  * - buscarCategoriaNome_ServicoNome(categoriaNome, nomeServico, auth): GET

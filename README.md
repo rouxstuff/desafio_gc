@@ -59,17 +59,19 @@ O sistema tem **dois perfis**: **Comprador** e **Administrador**.
 **Comprador**
 - **Cadastro com aprovação:** quem não tem acesso clica em *Solicitar cadastro* no login; o pedido fica em análise até o administrador aprovar.
 - **Consulta** de serviços por nome, com tolerância a siglas e **pesquisa de vários termos de uma vez** (separados por `;`).
-- **Sugestão e bloqueio** de duplicados na criação (≥ 60% sugere, ≥ 90% na mesma categoria bloqueia), com código gerado pelo sistema.
+- **Sugestão e bloqueio** de duplicados na criação (≥ 60% sugere; ≥ 90% de semelhança na mesma categoria bloqueia; **nome idêntico bloqueia em qualquer categoria**), com código gerado pelo sistema. O aviso e as sugestões aparecem no topo da tela.
 - **Contratação:** confirma um serviço aprovado, com quantidade, adicionais e observação.
 - **Meus serviços:** lista as contratações do próprio usuário, com data.
-- **Catálogo** paginado com busca por nome ou código.
+- **Catálogo** paginado com busca por nome ou código. O comprador só vê serviços **APROVADOS**: pendentes e reprovados ficam escondidos e não podem ser contratados.
 
 **Administrador**
-- **Aprovação** de serviços novos, com motivo obrigatório na reprovação. Serviço reprovado **só o administrador vê**.
+- **Aprovação** de serviços novos, com motivo obrigatório na reprovação. Serviço pendente ou reprovado **só o administrador vê**: Consulta e Catálogo mostram só serviços aprovados.
 - **Serviços:** substitui o Catálogo para o administrador, com a mesma lista e a opção **Alterar** (unidade de medida, unidade de custo e descrição). O administrador não contrata serviço.
 - **Contratações:** liga um comprador a um serviço aprovado, pesquisa um serviço por nome ou código e vê os compradores vinculados com a **data do vínculo**, além das confirmações dos usuários. O vínculo também nasce sozinho quando um usuário ligado a um comprador contrata um serviço.
 - **Importação** do catálogo saneado e dos vínculos por CSV (tudo ou nada, com simulação antes de gravar).
 - **Usuários:** login por **e-mail**; cria usuários, aprova ou recusa pedidos de cadastro e liga cada usuário Comprador a um comprador da base (**um usuário por comprador**).
+
+> **Limpeza posterior:** a planilha saneada tem 7.323 códigos. Depois dela, 8 serviços `ALMOCO PREMIUM` duplicados (séries 03 e 04) foram removidos, mantendo a série 02 (tabela De-Para em `depara_almoco_removidos.csv`; script `docs/limpar-almoco-duplicado.sql`).
 
 > **Nomes:** na planilha original os compradores aparecem como "fornecedor". No sistema o nome é **Comprador**. No banco, as tabelas e colunas mantêm o nome antigo (`fornecedor`, `fornecedor_servico`), para os dados continuarem valendo.
 
@@ -77,25 +79,25 @@ O sistema tem **dois perfis**: **Comprador** e **Administrador**.
 
 | Indicador | Antes | Depois |
 |---|---|---|
-| Códigos de serviço distintos | 7.937 | **7.323** (−614, **−7,7%**) |
-| Vínculos comprador × serviço | 9.795 linhas | 9.376 vínculos únicos (9.364 em serviços aprovados) |
+| Códigos de serviço distintos | 7.937 | **7.315** (−622, **−7,8%**) |
+| Vínculos comprador × serviço | 9.795 linhas | 9.368 vínculos únicos (9.356 em serviços aprovados) |
 | Compradores | 111 | 111 (nenhum perdido) |
 | Prefixos de descrição (`SV `, `SV-`, `H-`...) | 3 convenções misturadas | removidos do nome padronizado |
 | Nomes acima de 40 caracteres no catálogo | — | **0** |
 | Códigos repetidos no catálogo | — | **0** |
 | Mesmo nome repetido na mesma categoria | — | **0** |
 
-**Catálogo por categoria:** Civil 2.212 · Facilities 2.018 · Eletromecânica 1.496 · Materiais 1.137 · Insumos 460.
-**Status:** 7.311 aprovados e 12 em revisão (o mesmo número de código existe em duas categorias).
+**Catálogo por categoria:** Civil 2.212 · Facilities 2.018 · Eletromecânica 1.496 · Materiais 1.137 · Insumos 452.
+**Status:** 7.303 aprovados e 12 em revisão (o mesmo número de código existe em duas categorias).
 
-**O que ainda pode reduzir:** 974 pares de serviços *parecidos, mas não idênticos* foram separados para decisão da Gerdau (99 de confiança alta, 409 média e 466 baixa). Se todos fossem aprovados o catálogo iria a 6.459 serviços (−11,8%), mas esse é um **teto**: a faixa baixa mistura serviços realmente diferentes. Por isso nada foi unificado sem a decisão da Gerdau (veja [Metodologia](docs/04-metodologia-do-saneamento.md)).
+**O que ainda pode reduzir:** 974 pares de serviços *parecidos, mas não idênticos* foram separados para decisão da Gerdau (99 de confiança alta, 409 média e 466 baixa). Se todos fossem aprovados o catálogo iria a 6.451 serviços (−11,8%), mas esse é um **teto**: a faixa baixa mistura serviços realmente diferentes. Por isso nada foi unificado sem a decisão da Gerdau (veja [Metodologia](docs/04-metodologia-do-saneamento.md)).
 
 ## 4. Como o sistema funciona em 30 segundos
 
 1. O comprador digita o nome do serviço.
 2. Se existe, ele escolhe o serviço do catálogo e segue. **Nada novo é criado.**
 3. Se não existe, o sistema mostra os serviços parecidos (nota de 60% ou mais) para conferir.
-4. Se mesmo assim for novo, o comprador preenche o formulário. O filtro **bloqueia** nome repetido na categoria ou com **90% ou mais** de semelhança a um existente, e recusa nomes com mais de 40 caracteres.
+4. Se mesmo assim for novo, o comprador preenche o formulário. O filtro **bloqueia** nome idêntico a um existente (em qualquer categoria) ou com **90% ou mais** de semelhança a um da mesma categoria, e recusa nomes com mais de 40 caracteres.
 5. O que passa entra como **PENDENTE**, com código gerado pelo sistema. O administrador **aprova** ou **reprova** (com motivo).
 6. Aprovado, o serviço entra no catálogo e pode ser contratado e vinculado a compradores.
 
@@ -128,6 +130,14 @@ docker compose up -d         # volta
 docker compose down          # remove os containers (dados ficam no volume)
 docker compose down -v       # APAGA tudo, inclusive o banco; a próxima subida restaura do zero
 ```
+
+Limpeza dos serviços "ALMOCO PREMIUM" duplicados (séries 03 e 04) em um banco que já está rodando:
+
+```bash
+docker compose exec -T db psql -U gerdau -d desafiogc < db/02-limpar-almoco-duplicado.sql
+```
+
+Em uma subida nova (`docker compose down -v`), esse script roda sozinho depois da restauração.
 
 Backup do banco:
 
@@ -204,7 +214,7 @@ desafiogc/                  sistema (Spring Boot)
   src/main/java/...         controller, service, repository, model
   src/main/resources/       telas (Thymeleaf), CSS/JS, normalizacao/regras.csv
   src/test/java/...         testes
-  db/                       backup.dump e script de restore (Docker)
+  db/                       backup.dump, restore e 02-limpar-almoco-duplicado.sql (Docker)
   docs/                     importacao.md, modelos de CSV
   Dockerfile, docker-compose.yml, .env.example
 dados/

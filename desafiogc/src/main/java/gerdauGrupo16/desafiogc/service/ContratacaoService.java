@@ -8,7 +8,8 @@ package gerdauGrupo16.desafiogc.service;
  *   ligado a um comprador da base, o vínculo comprador x serviço também é criado (com a data). O administrador
  *   enxerga as contratações de todos. Reenviar a mesma confirmação em menos de 10 segundos não grava de novo.
  * MÉTODOS:
- * - registrar(usuarioEmail, servico, unidade, quantidade, adicionais, observacao): grava a contratação com
+ * - registrar(usuarioEmail, servico, unidade, quantidade, adicionais, observacao): recusa serviço que não
+ *   esteja APROVADO (409) e grava a contratação com
  *   os dados do momento (nome, unidade, quantidade, adicionais, observação) e cria o vínculo do comprador
  *   do usuário com o serviço, se ainda não existir.
  * - listar(usuarioEmail): contratações do usuário, da mais nova para a mais antiga.
@@ -24,7 +25,10 @@ import gerdauGrupo16.desafiogc.model.entity.CompradorServico;
 import gerdauGrupo16.desafiogc.repository.CompradorServicoRepository;
 import gerdauGrupo16.desafiogc.repository.ContratacaoRepository;
 import gerdauGrupo16.desafiogc.repository.UsuarioRepository;
+import gerdauGrupo16.desafiogc.model.enumeration.StatusServico;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -51,6 +55,10 @@ public class ContratacaoService {
     @Transactional
     public void registrar(String usuarioEmail, Servico servico, UnidadeMedida unidade, BigDecimal quantidade,
                           List<String> adicionais, String observacao) {
+        if (servico.getStatus() != StatusServico.APROVADO) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Só serviço APROVADO pode ser contratado. Este está " + servico.getStatus() + ".");
+        }
         LocalDateTime agora = LocalDateTime.now();
         boolean repetida = contratacaoRepository.existsByUsuarioEmailIgnoreCaseAndCodigoServicoAndCriadaEmAfter(
                 usuarioEmail, servico.getCodigoServico(), agora.minusSeconds(JANELA_DUPLICIDADE_SEGUNDOS));

@@ -12,6 +12,24 @@
         <div class="cartao">
             <ol th:replace="~{fragments/layout :: passos(1)}"></ol>
 
+            <!-- [AVISO + SUGESTÕES] no topo, para aparecer sem rolar a página -->
+            <div class="aviso-topo erro-topo" role="alert" th:if="${erro != null}">
+                <strong>Não foi possível solicitar:</strong>
+                <span th:text="${erro}"></span>
+            </div>
+            <div class="aviso-topo sugestoes-topo" th:if="${!similares.isEmpty()}">
+                <strong>Já existe algum destes?</strong>
+                <span class="nota">Confira antes de pedir um serviço novo. Clique para abrir.</span>
+                <div class="similares">
+                    <a th:each="s : ${similares}"
+                       th:href="@{/servicos/detalhes(codigo=${s.codigoServico()})}">
+                        <span th:text="${s.codigoServico() + ' - ' + s.nomeServico()}"></span>
+                        <small th:if="${s.aderenciaPercentual() >= 60}"
+                               th:text="${#numbers.formatDecimal(s.aderenciaPercentual(), 1, 0) + '%'}"></small>
+                    </a>
+                </div>
+            </div>
+
             <form th:action="@{/servicos/novo}" method="post">
                 <div class="grade">
                     <div>
@@ -64,18 +82,6 @@
                         <textarea class="campo" id="descricaoServico" name="descricaoServico" rows="2" maxlength="100"
                                   th:text="${descricaoServico}"></textarea>
 
-                        <div th:if="${!similares.isEmpty()}">
-                            <span class="rotulo" style="margin-top:20px">Já existe algum destes?</span>
-                            <div class="similares">
-                                <a th:each="s : ${similares}"
-                                   th:href="@{/servicos/detalhes(codigo=${s.codigoServico()})}">
-                                    <span th:text="${s.nomeServico()}"></span>
-                                    <small th:if="${s.aderenciaPercentual() >= 60}"
-                                           th:text="${#numbers.formatDecimal(s.aderenciaPercentual(), 1, 0) + '%'}"></small>
-                                </a>
-                            </div>
-                        </div>
-                        <p class="nota" th:if="${similares.isEmpty()}">Nenhum serviço parecido encontrado.</p>
                     </div>
 
                     <aside class="resultado" aria-live="polite">
@@ -87,10 +93,10 @@
                         <div class="barra">
                             <i id="barra" th:classappend="${estourou} ? 'estourou'" th:style="'width:' + ${porcentagem} + '%'"></i>
                         </div>
-                        <p class="erro" th:if="${erro != null}" th:text="${erro}"></p>
                         <p class="nota" style="margin-top:12px">
-                            O serviço entra como <b>PENDENTE</b>. Nomes com 90% ou mais de semelhança a um serviço
-                            da mesma categoria são bloqueados.
+                            O serviço entra como <b>PENDENTE</b>. Não é permitido repetir o nome de um serviço que já
+                            existe, em qualquer categoria. Nomes com 90% ou mais de semelhança a um serviço da mesma
+                            categoria também são bloqueados.
                         </p>
                         <button type="submit" class="acao" id="botao" th:disabled="${estourou}">Solicitar novo serviço</button>
                     </aside>

@@ -384,3 +384,11 @@ textarea.campo { resize: vertical; font-family: inherit; }
 }
 
 .paginacao { display: flex; justify-content: space-between; gap: 16px; margin-top: 8px; }
+
+/* Aviso e sugestões no topo da tela de cadastro */
+.aviso-topo { border-radius: var(--raio); padding: 14px 16px; margin: 0 0 18px; font-size: .95rem; }
+.aviso-topo strong { display: block; margin-bottom: 4px; }
+.erro-topo { background: #fdecea; border-left: 4px solid #c0392b; color: #8a1f13; }
+.sugestoes-topo { background: #fff8e1; border-left: 4px solid var(--amarelo); }
+.sugestoes-topo .nota { display: block; margin-bottom: 4px; }
+.sugestoes-topo .similares { margin-bottom: 0; }
