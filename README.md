@@ -214,12 +214,7 @@ desafiogc/                  sistema (Spring Boot)
   src/main/java/...         controller, service, repository, model
   src/main/resources/       telas (Thymeleaf), CSS/JS, normalizacao/regras.csv
   src/test/java/...         testes
-  db/                       backup.dump, restore e 02-limpar-almoco-duplicado.sql (Docker)
-  docs/                     importacao.md, modelos de CSV
   Dockerfile, docker-compose.yml, .env.example
-dados/
-  Gerdau_saneamento_atualizado.xlsx
-  pares_semelhantes_para_revisao.xlsx
 docs/                       esta documentação
 ```
 
